@@ -1,38 +1,54 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+// Persistence layer — plain JSON files. No native modules, no compilation needed
+// on any platform. The problem statement explicitly allowed a JSON-file fallback
+// for the config store; the app is small enough that we don't need SQLite.
+//
+// Layout on disk:
+//   data/config.json    — widget configuration (deep-merged over DEFAULT_CONFIG)
+//   data/uploads.json   — [{id, filename, mime, size, kind, created}, ...]
+//   data/counters.json  — session counters (persisted between restarts)
+//
+// Writes are atomic (write to .tmp, then rename), so a Ctrl+C mid-write can
+// never leave a half-truncated JSON file behind.
+
 const fs = require('fs');
+const path = require('path');
 
-const DB_PATH = path.join(__dirname, '..', 'data', 'config.db');
-fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+const DATA_DIR = path.join(__dirname, '..', 'data');
+fs.mkdirSync(DATA_DIR, { recursive: true });
 
-const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
+// ---------- Atomic file store ----------
+function filePath(name) { return path.join(DATA_DIR, name); }
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS kv (
-    key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS uploads (
-    id        TEXT PRIMARY KEY,
-    filename  TEXT NOT NULL,
-    mime      TEXT NOT NULL,
-    size      INTEGER NOT NULL,
-    kind      TEXT NOT NULL,
-    created   INTEGER NOT NULL
-  );
-`);
+function readJson(name, fallback) {
+  const p = filePath(name);
+  try {
+    if (!fs.existsSync(p)) return fallback;
+    const raw = fs.readFileSync(p, 'utf8');
+    if (!raw.trim()) return fallback;
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn(`[db] could not read ${name}, using fallback:`, e && e.message);
+    return fallback;
+  }
+}
 
-const getStmt = db.prepare('SELECT value FROM kv WHERE key = ?');
-const setStmt = db.prepare('INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
+function writeJson(name, value) {
+  const p = filePath(name);
+  const tmp = p + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(value, null, 2), 'utf8');
+  fs.renameSync(tmp, p);
+}
 
+// ---------- KV (used by bus.js for counters, and internally for config) ----------
 function getKV(key, fallback = null) {
-  const row = getStmt.get(key);
-  if (!row) return fallback;
-  try { return JSON.parse(row.value); } catch { return fallback; }
+  if (key === 'config')   return readJson('config.json', fallback);
+  if (key === 'counters') return readJson('counters.json', fallback);
+  return readJson(`kv-${key}.json`, fallback);
 }
 function setKV(key, value) {
-  setStmt.run(key, JSON.stringify(value));
+  if (key === 'config')   return writeJson('config.json', value);
+  if (key === 'counters') return writeJson('counters.json', value);
+  return writeJson(`kv-${key}.json`, value);
 }
 
 // ---------- Config defaults ----------
@@ -56,30 +72,11 @@ const DEFAULT_CONFIG = {
     showAvatars: true,
     roleColors: { streamer: '#C8102E', mod: '#3E5F3A', gifter: '#EDBE1A', default: '#EDEDEA' },
   },
-  goal: {
-    label: 'ROAD TO 10K',
-    start: 0,
-    target: 10000,
-    current: 0,
-  },
-  stats: {
-    showViewers: true,
-    showLikes: true,
-    showFollowers: true,
-  },
-  ticker: {
-    speed: 60,
-    maxItems: 20,
-  },
+  goal: { label: 'ROAD TO 10K', start: 0, target: 10000, current: 0 },
+  stats: { showViewers: true, showLikes: true, showFollowers: true },
+  ticker: { speed: 60, maxItems: 20 },
 };
 
-function loadConfig() {
-  const stored = getKV('config', {});
-  return deepMerge(DEFAULT_CONFIG, stored);
-}
-function saveConfig(next) {
-  setKV('config', next);
-}
 function deepMerge(base, over) {
   if (Array.isArray(base)) return Array.isArray(over) ? over : base;
   if (base && typeof base === 'object') {
@@ -91,23 +88,40 @@ function deepMerge(base, over) {
   return over === undefined ? base : over;
 }
 
+function loadConfig() {
+  const stored = readJson('config.json', {}) || {};
+  return deepMerge(DEFAULT_CONFIG, stored);
+}
+function saveConfig(next) {
+  writeJson('config.json', next);
+}
+
 // ---------- Uploads registry ----------
-const insertUpload = db.prepare('INSERT INTO uploads (id, filename, mime, size, kind, created) VALUES (?, ?, ?, ?, ?, ?)');
-const listUploadsStmt = db.prepare('SELECT * FROM uploads ORDER BY created DESC');
-const deleteUploadStmt = db.prepare('DELETE FROM uploads WHERE id = ?');
-const getUploadStmt = db.prepare('SELECT * FROM uploads WHERE id = ?');
+function readUploads() { return readJson('uploads.json', []); }
+function writeUploads(list) { writeJson('uploads.json', list); }
+
+function registerUpload(u) {
+  const list = readUploads();
+  list.unshift({
+    id: u.id, filename: u.filename, mime: u.mime, size: u.size, kind: u.kind,
+    created: Date.now(),
+  });
+  writeUploads(list);
+}
+function listUploads() {
+  return readUploads().slice().sort((a, b) => (b.created || 0) - (a.created || 0));
+}
+function deleteUpload(id) {
+  const list = readUploads();
+  const idx = list.findIndex(u => u.id === id);
+  if (idx < 0) return null;
+  const [removed] = list.splice(idx, 1);
+  writeUploads(list);
+  return removed;
+}
 
 module.exports = {
-  db,
-  loadConfig,
-  saveConfig,
-  getKV,
-  setKV,
-  registerUpload(u) { insertUpload.run(u.id, u.filename, u.mime, u.size, u.kind, Date.now()); },
-  listUploads()    { return listUploadsStmt.all(); },
-  deleteUpload(id) {
-    const row = getUploadStmt.get(id);
-    if (row) deleteUploadStmt.run(id);
-    return row;
-  },
+  loadConfig, saveConfig,
+  getKV, setKV,
+  registerUpload, listUploads, deleteUpload,
 };

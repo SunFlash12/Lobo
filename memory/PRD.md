@@ -92,6 +92,19 @@ Node 20+), no bundler, no paid services required.
 - ✅ Verified end-to-end: fired 5 follows + 3 gifts + 4 likes → restart →
      counters exactly preserved. Then reset → restart → still zero.
 
+## Iteration 3 (2026-02) — Windows-friendly persistence
+- ✅ Swapped `better-sqlite3` (needs Python + C++ build tools on Windows) for a
+     plain-JSON file store — the problem statement explicitly allowed this
+     fallback. Same public API in `server/db.js`, so no other files needed to
+     change.
+- ✅ Atomic writes (write-to-tmp + rename) so a Ctrl+C mid-write can never
+     corrupt the JSON files.
+- ✅ Files: `data/config.json`, `data/counters.json`, `data/uploads.json`.
+- ✅ Removed `better-sqlite3` from `package.json`; `npm install` now works on
+     stock Windows 10/11 with just Node.js — no Python, no build tools.
+- ✅ Verified end-to-end: all endpoints, all 8 event types, counter persistence
+     across restart, 19/19 normalizer unit tests.
+
 ## Real-live-session test
 Requires @lobothemainman to actually be broadcasting on TikTok. From the sandbox
 we can only verify the "not live" reconnect loop, which is working and now
