@@ -187,5 +187,15 @@ server.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`\n  Lobo Live Lab — listening on http://localhost:${PORT}`);
   console.log(`  Dashboard: http://localhost:${PORT}/dashboard`);
-  console.log(`  Password : ${process.env.DASHBOARD_PASSWORD ? '(set in .env)' : 'Bladestrex (default — change me!)'}\n`);
+  console.log(`  Password : ${process.env.DASHBOARD_PASSWORD ? '(set in .env)' : 'Bladestrex (default — change me!)'}`);
+  console.log(`  Signing  : ${process.env.SIGN_API_KEY ? 'SIGN_API_KEY set (Euler Stream)' : 'unsigned (fine for most streams; set SIGN_API_KEY if TikTok blocks us)'}`);
+  console.log(`  Demo mode: ${(cfg.connection.demoMode || (process.env.DEMO_MODE || 'false') === 'true') ? 'ON' : 'off'}\n`);
 });
+
+// Flush counters on shutdown so a Ctrl+C never loses the last few events
+function shutdown() {
+  try { bus._persistNow(); } catch (_e) { /* ignore */ }
+  process.exit(0);
+}
+process.on('SIGINT',  shutdown);
+process.on('SIGTERM', shutdown);

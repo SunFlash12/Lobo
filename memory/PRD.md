@@ -76,9 +76,31 @@ Node 20+), no bundler, no paid services required.
 - P2: WebSocket auth (currently overlays are unauth so they load in OBS with
       zero config; dashboard socket is behind cookie auth on the HTTP handshake
       only, not on the WS itself — acceptable for a localhost tool)
-- P2: Persist counters across restarts (currently in-memory)
 - P2: Multi-user dashboard / role-based access
 - P2: Streamlabs / StreamElements import for existing alert configs
+
+## Iteration 2 (2026-02) — additions
+- ✅ Session counters persist to SQLite (`kv[counters]`) with 1s debounce, load
+     on boot, cleared by the "Reset session counters" button, flushed on SIGINT/
+     SIGTERM. Viewer count stays live-only (not persisted).
+- ✅ Fixed `WebcastEvent.SUBSCRIBE` (does not exist in v2) → `SUB_NOTIFY`.
+- ✅ Better status-pill diagnostics: distinguishes "user not live", "sign
+     blocked", "rate-limited", and the generic "Room ID not found" case with a
+     nudge toward `SIGN_API_KEY` when unsigned.
+- ✅ Boot log prints DASHBOARD_PASSWORD source, SIGN_API_KEY presence, and
+     DEMO_MODE state so the streamer can see at a glance what's wired.
+- ✅ Verified end-to-end: fired 5 follows + 3 gifts + 4 likes → restart →
+     counters exactly preserved. Then reset → restart → still zero.
+
+## Real-live-session test
+Requires @lobothemainman to actually be broadcasting on TikTok. From the sandbox
+we can only verify the "not live" reconnect loop, which is working and now
+shows a plain-language reason in the status pill. When Lobo does test live:
+1. Open dashboard, watch the top-right status pill turn green ("LIVE") within
+   a few seconds of hitting Connect.
+2. If it stays yellow/red with a "sign blocked" or "Room ID not found" message
+   for over a minute while he's clearly on air, set `SIGN_API_KEY` in `.env`
+   (get one from https://www.eulerstream.com/) and restart.
 
 ## File map
 ```

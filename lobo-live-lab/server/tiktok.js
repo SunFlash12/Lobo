@@ -75,7 +75,7 @@ class TikTokManager {
     wire(WebcastEvent ? WebcastEvent.MEMBER    : 'member',    'member');
     wire(WebcastEvent ? WebcastEvent.GIFT      : 'gift',      'gift');
     wire(WebcastEvent ? WebcastEvent.STREAM_END: 'streamEnd', 'streamEnd');
-    try { this.conn.on(WebcastEvent ? WebcastEvent.SUBSCRIBE : 'subscribe', (d) => handleRaw('subscribe', d, (ev) => bus.publish(ev))); } catch (_e) { /* ignore */ }
+    try { this.conn.on(WebcastEvent ? WebcastEvent.SUB_NOTIFY : 'subNotify', (d) => handleRaw('subscribe', d, (ev) => bus.publish(ev))); } catch (_e) { /* ignore */ }
     try {
       this.conn.on(WebcastEvent ? WebcastEvent.ROOM_USER : 'roomUser', (data) => {
         bus.publish({
@@ -119,10 +119,21 @@ class TikTokManager {
     } catch (err) {
       const msg = (err && err.message) || String(err);
       const name = (err && err.name) || '';
+      const blob = `${name} ${msg}`;
       let human = msg;
-      if (/UserOffline|not.*live|offline|LIVE has ended/i.test(msg + ' ' + name)) human = `@${this.username} is not live right now.`;
-      else if (/rate|429/i.test(msg))                          human = 'TikTok is rate-limiting us. Retrying with backoff.';
-      else if (/sign|challenge|captcha/i.test(msg))            human = 'TikTok signing failed. Consider setting SIGN_API_KEY (Euler Stream).';
+      if (/UserOffline|user.*offline|not.*live|LIVE has ended/i.test(blob)) {
+        human = `@${this.username} is not live right now. Will keep checking.`;
+      } else if (/Room ID|fetch-room-id|retrieve Room ID/i.test(blob)) {
+        // Most common cause: user isn't live; second most common: TikTok temporarily
+        // blocked our unsigned request. Tell the streamer both possibilities.
+        human = process.env.SIGN_API_KEY
+          ? `Couldn't find @${this.username}'s room. They probably aren't live yet.`
+          : `Couldn't find @${this.username}'s room. Either they aren't live yet, or TikTok blocked our request. If it keeps failing while you know you're live, set SIGN_API_KEY (Euler Stream) in .env.`;
+      } else if (/RATE_LIMIT|rate.?limit|429/i.test(blob)) {
+        human = 'TikTok is rate-limiting us. Retrying with backoff.';
+      } else if (/SignAPI|sign|challenge|captcha|SIGN_NOT_200/i.test(blob)) {
+        human = 'TikTok signing failed. Set SIGN_API_KEY (from eulerstream.com) in .env for a stable connection.';
+      }
       this._scheduleReconnect(human);
     }
   }
