@@ -17,6 +17,12 @@
     // Nav
     $$('.nav-item').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
+    // "Start here" jump links → switch to the referenced tab
+    document.addEventListener('click', (e) => {
+      const j = e.target.closest('[data-jump]');
+      if (j) { switchTab(j.dataset.jump); e.preventDefault(); }
+    });
+
     // Top bar
     $('#logoutBtn').addEventListener('click', async () => {
       await fetch('/logout', { method:'POST' });

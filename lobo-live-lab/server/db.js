@@ -58,11 +58,11 @@ const DEFAULT_CONFIG = {
     demoMode: (process.env.DEMO_MODE || 'false') === 'true',
   },
   alerts: {
-    follow:     { enabled: true,  sound: '', image: '', duration: 5000, volume: 0.8, template: 'FRESH MEAT — {username}', tts: true  },
-    gift:       { enabled: true,  sound: '', image: '', duration: 6000, volume: 0.9, template: '{username} sent {giftName} x{repeatCount} ({coins} coins)', megaThreshold: 500 },
+    follow:     { enabled: true,  sound: '', image: '/uploads/starter-new-fan.png', duration: 5000, volume: 0.8, template: 'FRESH MEAT — {username}', tts: true  },
+    gift:       { enabled: true,  sound: '', image: '/uploads/starter-choked.png',  duration: 6000, volume: 0.9, template: '{username} sent {giftName} x{repeatCount} ({coins} coins)', megaThreshold: 500 },
     like:       { enabled: true,  sound: '', image: '', duration: 3500, volume: 0.6, template: '{username} smashed {likeCount} likes', milestoneEvery: 100 },
     share:      { enabled: true,  sound: '', image: '', duration: 4000, volume: 0.7, template: '{username} SHARED THE STREAM' },
-    subscribe:  { enabled: true,  sound: '', image: '', duration: 6500, volume: 0.9, template: '{username} JOINED THE PACK' },
+    subscribe:  { enabled: true,  sound: '', image: '/uploads/starter-lobo-pose.png', duration: 6500, volume: 0.9, template: '{username} JOINED THE PACK' },
   },
   chat: {
     fadeAfter: 12000,

@@ -10,6 +10,9 @@ dashboard at `/dashboard`.
 
 **Zero paid services required. Runs with `npm install && npm start`.**
 
+> 🩸 **New user? Start with [TUTORIAL.md](./TUTORIAL.md) — a full step-by-step**
+> **onboarding guide written for a non-technical streamer.**
+
 ---
 
 ## Table of contents

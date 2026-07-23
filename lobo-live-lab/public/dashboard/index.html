@@ -44,7 +44,8 @@
 <main class="main">
   <aside class="side">
     <nav>
-      <button class="nav-item active" data-tab="connection" data-testid="tab-connection">Connection</button>
+      <button class="nav-item active" data-tab="start"      data-testid="tab-start">Start here</button>
+      <button class="nav-item" data-tab="connection" data-testid="tab-connection">Connection</button>
       <button class="nav-item" data-tab="alerts"    data-testid="tab-alerts">Alerts</button>
       <button class="nav-item" data-tab="chat"      data-testid="tab-chat">Chat box</button>
       <button class="nav-item" data-tab="goal"      data-testid="tab-goal">Goal bar</button>
@@ -59,8 +60,80 @@
 
   <section class="content">
 
+    <!-- START HERE -->
+    <div class="tab" data-tab="start">
+      <h2 class="tab-title">Start here</h2>
+      <div class="onboard">
+        <p class="onboard-lede">Welcome to the pack. Six steps and you're on air.</p>
+        <ol class="onboard-steps">
+          <li class="onboard-step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Change the default password</div>
+              <div class="step-sub">Right now the dashboard password is <code>Bladestrex</code>. Copy <code>.env.example</code> to <code>.env</code>, edit <code>DASHBOARD_PASSWORD=…</code>, then restart <code>npm start</code>.</div>
+            </div>
+          </li>
+          <li class="onboard-step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Connect to your TikTok</div>
+              <div class="step-sub">Head to <button class="link-btn" data-jump="connection">Connection</button>, type your username (no @), hit <strong>Connect</strong>. Status pill top-right turns green when you go live.</div>
+            </div>
+          </li>
+          <li class="onboard-step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Upload sounds &amp; images</div>
+              <div class="step-sub"><button class="link-btn" data-jump="uploads">Sounds &amp; images</button> — mp3/ogg/wav (5 MB max) or png/jpg/gif/webp/svg. Short sounds land harder than long ones.</div>
+            </div>
+          </li>
+          <li class="onboard-step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">Configure the alerts</div>
+              <div class="step-sub">Open <button class="link-btn" data-jump="alerts">Alerts</button>. For each type, pick a sound + image, tweak the text template, and hit the per-alert <strong>Test</strong> button. The right-hand preview updates live.</div>
+            </div>
+          </li>
+          <li class="onboard-step">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <div class="step-title">Add the overlays to OBS</div>
+              <div class="step-sub">Go to <button class="link-btn" data-jump="obs">OBS setup</button>, copy each overlay URL, and in OBS: <em>+ → Browser → paste</em>. All five overlays are transparent — drop them over gameplay.</div>
+            </div>
+          </li>
+          <li class="onboard-step">
+            <div class="step-num">6</div>
+            <div class="step-body">
+              <div class="step-title">Test it all with demo mode</div>
+              <div class="step-sub">Before your first stream, open <button class="link-btn" data-jump="testing">Test &amp; demo</button> and click <strong>Start demo</strong>. Random fake events fire every 3-8 seconds so you can watch every overlay come alive without going live.</div>
+            </div>
+          </li>
+        </ol>
+
+        <div class="onboard-footer">
+          <div class="onboard-block">
+            <div class="onboard-block-title">The stream-day workflow</div>
+            <ol class="onboard-mini">
+              <li>Boot Lobo Live Lab (<code>npm start</code>)</li>
+              <li>Open dashboard → Connect</li>
+              <li>Reset session counters (optional)</li>
+              <li>Start streaming — status pill turns green — done</li>
+            </ol>
+          </div>
+          <div class="onboard-block">
+            <div class="onboard-block-title">Something not working?</div>
+            <div class="onboard-block-body">
+              Full tutorial with troubleshooting lives in <code>TUTORIAL.md</code> in your project folder. Or check the Command Prompt window running <code>npm start</code> — errors show up there first.
+              <br/><br/>
+              If TikTok blocks your connection while you're clearly live, grab a free <a href="https://www.eulerstream.com/" target="_blank" rel="noopener">Euler Stream</a> key and paste it into <code>.env</code> as <code>SIGN_API_KEY=…</code>.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- CONNECTION -->
-    <div class="tab" data-tab="connection">
+    <div class="tab" data-tab="connection" hidden>
       <h2 class="tab-title">Connection</h2>
       <div class="grid two">
         <div class="card">

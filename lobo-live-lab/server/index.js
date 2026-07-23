@@ -15,6 +15,7 @@ const tiktok = require('./tiktok');
 const demo = require('./demo');
 const auth = require('./auth');
 const { uploader, UPLOAD_DIR, classify } = require('./uploads');
+const { importStarters } = require('./starters');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -176,6 +177,7 @@ function deepMerge(base, over) {
 }
 
 // ---------- Boot ----------
+importStarters();
 const cfg = db.loadConfig();
 if (cfg.connection.demoMode || (process.env.DEMO_MODE || 'false') === 'true') {
   demo.start();
