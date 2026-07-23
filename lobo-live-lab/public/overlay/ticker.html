@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Lobo — Ticker</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/overlay-base.css" />
+<style>
+  #ticker {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    height: 64px;
+    background: linear-gradient(90deg, rgba(10,10,11,0.95), rgba(10,10,11,0.85));
+    border-top: 3px solid var(--blood);
+    overflow: hidden;
+  }
+  #track {
+    display: flex; align-items: center; gap: 48px;
+    height: 100%;
+    white-space: nowrap;
+    animation: scroll linear infinite;
+    animation-duration: 60s;
+    padding-left: 100%;
+  }
+  @keyframes scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-100%); }
+  }
+  .item {
+    font-family: 'Anton', sans-serif; font-size: 30px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--bone);
+    display: inline-flex; align-items: baseline; gap: 12px;
+  }
+  .item .tag {
+    font-family: 'Bebas Neue', 'Anton', sans-serif;
+    font-size: 22px; letter-spacing: 0.24em;
+    color: var(--blood);
+  }
+  .item.gift .tag { color: var(--gold); }
+  .item.share .tag { color: var(--swamp); }
+  .item.subscribe .tag { color: var(--gold); }
+  .item .sep { color: var(--steel); }
+</style>
+</head>
+<body>
+  <div id="ticker" data-testid="ticker-widget">
+    <div id="track"></div>
+  </div>
+  <script src="/static/overlay-base.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const track = document.getElementById('track');
+
+    function applySpeed() {
+      const t = (LOBO.config && LOBO.config.ticker) || { speed: 60 };
+      document.getElementById('track').style.animationDuration = (t.speed || 60) + 's';
+    }
+    LOBO.on('hello', applySpeed);
+    LOBO.on('config', applySpeed);
+
+    function push(ev) {
+      const uname = (ev.user && (ev.user.nickname || ev.user.username)) || 'someone';
+      let tag = '', body = '', cls = '';
+      if (ev.type === 'follow')       { tag='NEW FOLLOWER';    body=uname; cls='follow'; }
+      else if (ev.type === 'gift')    { tag='GIFT';            body=`${uname} — ${ev.value.giftName || 'Gift'} x${ev.value.repeatCount||1} (${ev.value.coins||0} coins)`; cls='gift'; }
+      else if (ev.type === 'share')   { tag='SHARED';          body=uname; cls='share'; }
+      else if (ev.type === 'subscribe'){tag='NEW SUB';         body=uname; cls='subscribe'; }
+      else return;
+
+      const d = document.createElement('div');
+      d.className = 'item ' + cls;
+      d.dataset.testid = 'ticker-item';
+      d.innerHTML = `<span class="tag">${LOBO.escapeHTML(tag)}</span><span>${LOBO.escapeHTML(body)}</span><span class="sep">✦</span>`;
+      track.appendChild(d);
+
+      const max = (LOBO.config && LOBO.config.ticker && LOBO.config.ticker.maxItems) || 20;
+      while (track.children.length > max) track.firstElementChild.remove();
+    }
+    LOBO.on('event', push);
+  </script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Lobo — Stats</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/overlay-base.css" />
+<style>
+  #stats {
+    position: fixed; right: 32px; top: 32px;
+    display: flex; flex-direction: column; gap: 18px;
+    align-items: flex-end;
+  }
+  .stat {
+    background: linear-gradient(90deg, rgba(10,10,11,0.85), rgba(10,10,11,0.55));
+    border-right: 4px solid var(--blood);
+    padding: 14px 22px 16px;
+    text-align: right;
+    min-width: 220px;
+  }
+  .stat .k {
+    font-family: 'Anton', sans-serif; font-size: 18px; letter-spacing: 0.24em;
+    color: var(--steel); text-transform: uppercase;
+  }
+  .stat .v {
+    font-family: 'Anton', sans-serif; font-size: 88px; line-height: 0.85;
+    color: var(--bone); margin-top: 4px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  }
+  .stat.bloody .v { color: var(--blood); }
+  .stat.swamp .v { color: var(--swamp); }
+  .stat .v.tick { animation: tick 260ms ease-out; }
+  @keyframes tick {
+    0%   { transform: translateY(-6px); opacity: 0.4; }
+    100% { transform: translateY(0);   opacity: 1;   }
+  }
+</style>
+</head>
+<body>
+  <div id="stats" data-testid="stats-widget">
+    <div class="stat bloody" id="viewersBox" data-testid="stat-viewers">
+      <div class="k">Viewers</div>
+      <div class="v" id="viewers">0</div>
+    </div>
+    <div class="stat" id="likesBox" data-testid="stat-likes">
+      <div class="k">Session Likes</div>
+      <div class="v" id="likes">0</div>
+    </div>
+    <div class="stat swamp" id="followersBox" data-testid="stat-followers">
+      <div class="k">New Followers</div>
+      <div class="v" id="followers">0</div>
+    </div>
+  </div>
+  <script src="/static/overlay-base.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const els = {
+      viewers: document.getElementById('viewers'),
+      likes: document.getElementById('likes'),
+      followers: document.getElementById('followers'),
+    };
+    const boxes = {
+      viewers: document.getElementById('viewersBox'),
+      likes: document.getElementById('likesBox'),
+      followers: document.getElementById('followersBox'),
+    };
+
+    function fmt(n) {
+      n = Number(n||0);
+      if (n >= 1_000_000) return (n/1_000_000).toFixed(1).replace(/\.0$/,'') + 'M';
+      if (n >= 10_000)    return (n/1_000).toFixed(1).replace(/\.0$/,'') + 'K';
+      return String(n);
+    }
+    function set(id, val) {
+      const el = els[id]; if (!el) return;
+      if (el.textContent !== fmt(val)) {
+        el.textContent = fmt(val);
+        el.classList.remove('tick'); void el.offsetWidth; el.classList.add('tick');
+      }
+    }
+    function applyVisibility() {
+      const s = (LOBO.config && LOBO.config.stats) || { showViewers:true, showLikes:true, showFollowers:true };
+      boxes.viewers.style.display   = s.showViewers   ? '' : 'none';
+      boxes.likes.style.display     = s.showLikes     ? '' : 'none';
+      boxes.followers.style.display = s.showFollowers ? '' : 'none';
+    }
+
+    LOBO.on('hello', (d) => { applyVisibility(); if (d.counters) { set('viewers', d.counters.viewers); set('likes', d.counters.sessionLikes); set('followers', d.counters.followers);} });
+    LOBO.on('config', applyVisibility);
+    LOBO.on('counters', c => { set('viewers', c.viewers); set('likes', c.sessionLikes); set('followers', c.followers); });
+    // demo mode uses events only; track locally
+    let vLocal=0,lLocal=0,fLocal=0;
+    LOBO.on('event', ev => {
+      if (LOBO.socket && LOBO.socket.connected && !LOBO.isDemo) return;
+      if (ev.type === 'viewers') { vLocal = ev.value.viewerCount || 0; set('viewers', vLocal); }
+      if (ev.type === 'like')    { lLocal += (ev.value.likeCount||1); set('likes', lLocal); }
+      if (ev.type === 'follow')  { fLocal += 1; set('followers', fLocal); }
+    });
+  </script>
+</body>
+</html>

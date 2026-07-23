@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1080, initial-scale=1" />
+<title>Lobo — Alerts</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/overlay-base.css" />
+<style>
+  #stage {
+    position: fixed; inset: 0;
+    display: grid; place-items: center;
+  }
+  .alert {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    min-width: 640px; max-width: 92vw;
+    padding: 40px 56px;
+    background: linear-gradient(180deg, rgba(10,10,11,0.92), rgba(10,10,11,0.86));
+    border-left: 6px solid var(--blood);
+    border-right: 1px solid rgba(200,16,46,0.4);
+    box-shadow: 0 40px 90px rgba(0,0,0,0.5);
+    color: var(--bone);
+    text-align: left;
+    overflow: hidden;
+  }
+  .alert.center { text-align: center; }
+  .alert .kicker {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; letter-spacing: 0.32em;
+    color: var(--blood); margin-bottom: 6px;
+  }
+  .alert .headline {
+    font-family: 'Anton', sans-serif;
+    font-size: 84px; line-height: 0.92; letter-spacing: 0.01em;
+    text-transform: uppercase;
+    word-break: break-word;
+  }
+  .alert .sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 20px; color: var(--steel); margin-top: 14px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .alert .art {
+    position: absolute; right: -20px; bottom: -20px;
+    width: 220px; height: 220px;
+    object-fit: contain; object-position: right bottom;
+    opacity: 0.9; pointer-events: none;
+  }
+  .alert .slash {
+    position: absolute; inset: 0; pointer-events: none; opacity: .55;
+  }
+
+  /* Entrance: claw-slash-in */
+  @keyframes clawIn {
+    0%   { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); transform: translate(-52%, -50%) skewX(-10deg); opacity: 0; }
+    50%  { clip-path: polygon(0 0, 60% 0, 60% 100%, 0 100%); opacity: 1; }
+    100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); transform: translate(-50%, -50%) skewX(0); opacity: 1; }
+  }
+  @keyframes clawOut {
+    0%   { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); opacity: 1; }
+    100% { clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%); opacity: 0; transform: translate(-48%,-50%) skewX(6deg); }
+  }
+  .alert.enter { animation: clawIn 320ms cubic-bezier(.2,.85,.25,1) both; }
+  .alert.exit  { animation: clawOut 280ms cubic-bezier(.6,.05,.7,.1) both; }
+
+  /* Glitch variant for shares */
+  .alert.glitch .headline {
+    text-shadow: 3px 0 var(--blood), -3px 0 var(--swamp);
+    animation: glitchShift 120ms steps(2) infinite;
+  }
+  @keyframes glitchShift {
+    0%,100% { transform: translate(0,0); }
+    50% { transform: translate(-1px, 1px); }
+  }
+
+  /* MEGA — screen shake + particles + CRT flicker */
+  .alert.mega {
+    background: linear-gradient(180deg, rgba(30,4,8,0.96), rgba(10,0,2,0.94));
+    border-left: 10px solid var(--blood);
+    border-right: 4px solid var(--gold);
+    animation: clawIn 320ms cubic-bezier(.2,.85,.25,1) both, shake 90ms linear 320ms 12;
+  }
+  .alert.mega .headline {
+    font-size: 108px;
+    color: var(--gold);
+    text-shadow: 0 0 20px rgba(237,190,26,0.35), 3px 0 var(--blood), -3px 0 var(--swamp);
+  }
+  .alert.mega .kicker { color: var(--gold); }
+  .alert.mega::after {
+    content: ''; position:absolute; inset:0; pointer-events:none;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0 2px, transparent 2px 4px);
+    animation: flicker 90ms steps(2) infinite;
+  }
+  @keyframes shake {
+    0% { transform: translate(-50%, -50%); }
+    25%{ transform: translate(-51%, -49%); }
+    50%{ transform: translate(-49%, -51%); }
+    75%{ transform: translate(-51%, -50%); }
+    100%{ transform: translate(-50%, -50%); }
+  }
+  @keyframes flicker { 0%,100% { opacity: 0.35; } 50% { opacity: 0.15; } }
+
+  .particles { position: absolute; inset: -20px; overflow: hidden; pointer-events:none; }
+  .particles span {
+    position:absolute; width:6px; height:6px; background: var(--gold);
+    left: var(--x, 50%); top: 100%; opacity: 0.9;
+    animation: rise var(--d, 1200ms) ease-out forwards;
+    animation-delay: var(--delay, 0ms);
+  }
+  @keyframes rise {
+    0%   { transform: translateY(0) scale(1); opacity: .9; }
+    100% { transform: translateY(-520px) scale(0.3); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+  <div id="stage" data-testid="alerts-stage"></div>
+  <script src="/static/overlay-base.js"></script>
+  <script src="/socket.io/socket.io.js" onload=""></script>
+  <script>
+    const stage = document.getElementById('stage');
+    const queue = [];
+    let playing = false;
+
+    function push(item) { queue.push(item); if (!playing) next(); }
+
+    async function next() {
+      const item = queue.shift();
+      if (!item) { playing = false; return; }
+      playing = true;
+      const el = render(item);
+      stage.appendChild(el);
+      if (item.tts && 'speechSynthesis' in window) {
+        try {
+          const u = new SpeechSynthesisUtterance(item.tts);
+          u.rate = 1.05; u.pitch = 0.8; u.volume = 0.9;
+          window.speechSynthesis.speak(u);
+        } catch(_e) {}
+      }
+      if (item.sound) {
+        try {
+          const a = new Audio(item.sound);
+          a.volume = item.volume != null ? item.volume : 0.8;
+          a.play().catch(()=>{});
+        } catch(_e){}
+      }
+      await sleep(item.duration || 5000);
+      el.classList.remove('enter'); el.classList.add('exit');
+      await sleep(320);
+      el.remove();
+      next();
+    }
+    function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+    function render(item) {
+      const el = document.createElement('div');
+      el.className = 'alert enter ' + (item.variant || '');
+      if (item.mega) el.classList.add('mega');
+      el.innerHTML = `
+        <div class="kicker" data-testid="alert-kicker">${LOBO.escapeHTML(item.kicker || '')}</div>
+        <div class="headline" data-testid="alert-headline">${LOBO.escapeHTML(item.headline || '')}</div>
+        ${item.sub ? `<div class="sub">${LOBO.escapeHTML(item.sub)}</div>` : ''}
+        ${item.image ? `<img class="art" src="${LOBO.escapeHTML(item.image)}" alt="">` : ''}
+        ${item.mega ? '<div class="particles"></div>' : ''}
+      `;
+      if (item.mega) {
+        const p = el.querySelector('.particles');
+        for (let i=0;i<30;i++) {
+          const s = document.createElement('span');
+          s.style.setProperty('--x', (Math.random()*100)+'%');
+          s.style.setProperty('--d', (900+Math.random()*900)+'ms');
+          s.style.setProperty('--delay', (Math.random()*400)+'ms');
+          s.style.background = i%3===0 ? 'var(--blood)' : (i%3===1 ? 'var(--gold)' : 'var(--bone)');
+          p.appendChild(s);
+        }
+      }
+      return el;
+    }
+
+    // Like milestone counter
+    let likeAccum = 0;
+
+    LOBO.on('event', (ev) => {
+      const cfg = (LOBO.config && LOBO.config.alerts) || {};
+      const uname = (ev.user && (ev.user.nickname || ev.user.username)) || 'somebody';
+      if (ev.type === 'follow' && cfg.follow && cfg.follow.enabled) {
+        const vars = { username: uname, giftName:'', repeatCount:'', coins:'', likeCount:'' };
+        push({
+          kicker: 'NEW FOLLOWER',
+          headline: LOBO.template(cfg.follow.template || 'FRESH MEAT — {username}', vars),
+          sub: '',
+          duration: cfg.follow.duration || 5000,
+          sound: cfg.follow.sound || '',
+          image: cfg.follow.image || '',
+          volume: cfg.follow.volume,
+          tts: cfg.follow.tts ? uname : '',
+          variant: '',
+        });
+      } else if (ev.type === 'gift' && cfg.gift && cfg.gift.enabled) {
+        const rc = ev.value.repeatCount || 1;
+        const coins = ev.value.coins || 0;
+        const vars = { username: uname, giftName: ev.value.giftName || 'Gift', repeatCount: rc, coins, likeCount:'' };
+        const mega = coins >= (cfg.gift.megaThreshold || 500);
+        push({
+          kicker: mega ? '⚡ MEGA GIFT ⚡' : 'GIFT INCOMING',
+          headline: LOBO.template(cfg.gift.template || '{username} sent {giftName} x{repeatCount} ({coins} coins)', vars),
+          sub: `${coins} coins`,
+          duration: cfg.gift.duration || 6000,
+          sound: cfg.gift.sound || '',
+          image: cfg.gift.image || '',
+          volume: cfg.gift.volume,
+          mega,
+        });
+      } else if (ev.type === 'like' && cfg.like && cfg.like.enabled) {
+        likeAccum += (ev.value.likeCount || 1);
+        const step = cfg.like.milestoneEvery || 100;
+        if (step > 0 && likeAccum >= step) {
+          const milestoneCount = likeAccum;
+          likeAccum = likeAccum % step;
+          const vars = { username: uname, giftName:'', repeatCount:'', coins:'', likeCount: milestoneCount };
+          push({
+            kicker: 'LIKE MILESTONE',
+            headline: LOBO.template(cfg.like.template || '{username} smashed {likeCount} likes', vars),
+            sub: `+${milestoneCount} likes`,
+            duration: cfg.like.duration || 3500,
+            sound: cfg.like.sound || '',
+            image: cfg.like.image || '',
+            volume: cfg.like.volume,
+          });
+        }
+      } else if (ev.type === 'share' && cfg.share && cfg.share.enabled) {
+        push({
+          kicker: 'SHARED',
+          headline: LOBO.template(cfg.share.template || '{username} SHARED THE STREAM', { username: uname }),
+          duration: cfg.share.duration || 4000,
+          sound: cfg.share.sound || '',
+          image: cfg.share.image || '',
+          volume: cfg.share.volume,
+          variant: 'glitch',
+        });
+      } else if (ev.type === 'subscribe' && cfg.subscribe && cfg.subscribe.enabled) {
+        push({
+          kicker: 'NEW SUB',
+          headline: LOBO.template(cfg.subscribe.template || '{username} JOINED THE PACK', { username: uname }),
+          duration: cfg.subscribe.duration || 6500,
+          sound: cfg.subscribe.sound || '',
+          image: cfg.subscribe.image || '',
+          volume: cfg.subscribe.volume,
+        });
+      }
+    });
+  </script>
+</body>
+</html>

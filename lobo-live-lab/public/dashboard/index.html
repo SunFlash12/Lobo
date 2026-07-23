@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Lobo Live Lab — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/dashboard-assets/dashboard.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-slash" viewBox="0 0 200 60" aria-hidden="true">
+      <g fill="none" stroke="#C8102E" stroke-width="6" stroke-linecap="round">
+        <path d="M4,52 Q60,20 196,4" opacity="0.95"/>
+        <path d="M10,58 Q70,28 195,14" opacity="0.65"/>
+        <path d="M2,44 Q52,14 190,-2" opacity="0.45"/>
+      </g>
+    </svg>
+    <div>
+      <div class="brand-lab">LOBO LIVE LAB</div>
+      <div class="brand-sub">Overlay & alerts control panel</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="status-pill" data-testid="status-pill" id="statusPill">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Connecting…</span>
+    </div>
+    <button class="btn ghost" id="logoutBtn" data-testid="logout-btn">Log out</button>
+  </div>
+</header>
+
+<div class="claw-divider" aria-hidden="true">
+  <svg viewBox="0 0 1600 40"><g fill="none" stroke="#C8102E" stroke-width="4" stroke-linecap="round">
+    <path d="M0,30 Q400,10 1600,26" opacity="0.9"/>
+    <path d="M0,36 Q500,20 1600,32" opacity="0.55"/>
+    <path d="M0,20 Q450,4 1600,16" opacity="0.35"/>
+  </g></svg>
+</div>
+
+<main class="main">
+  <aside class="side">
+    <nav>
+      <button class="nav-item active" data-tab="connection" data-testid="tab-connection">Connection</button>
+      <button class="nav-item" data-tab="alerts"    data-testid="tab-alerts">Alerts</button>
+      <button class="nav-item" data-tab="chat"      data-testid="tab-chat">Chat box</button>
+      <button class="nav-item" data-tab="goal"      data-testid="tab-goal">Goal bar</button>
+      <button class="nav-item" data-tab="stats"     data-testid="tab-stats">Stats</button>
+      <button class="nav-item" data-tab="ticker"    data-testid="tab-ticker">Ticker</button>
+      <button class="nav-item" data-tab="uploads"   data-testid="tab-uploads">Sounds &amp; images</button>
+      <button class="nav-item" data-tab="testing"   data-testid="tab-testing">Test &amp; demo</button>
+      <button class="nav-item" data-tab="log"       data-testid="tab-log">Event log</button>
+      <button class="nav-item" data-tab="obs"       data-testid="tab-obs">OBS setup</button>
+    </nav>
+  </aside>
+
+  <section class="content">
+
+    <!-- CONNECTION -->
+    <div class="tab" data-tab="connection">
+      <h2 class="tab-title">Connection</h2>
+      <div class="grid two">
+        <div class="card">
+          <div class="card-title">TikTok LIVE</div>
+          <label class="fld">
+            <span>Username (no @)</span>
+            <input id="username" type="text" data-testid="username-input" placeholder="lobothemainman" />
+          </label>
+          <div class="row">
+            <button class="btn primary" id="connectBtn" data-testid="connect-btn">Connect</button>
+            <button class="btn ghost"   id="disconnectBtn" data-testid="disconnect-btn">Disconnect</button>
+          </div>
+          <p class="hint">Auto-reconnects with backoff if TikTok drops. If <code>@user</code> isn't live yet, the connector keeps trying and reports it below.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Current status</div>
+          <div class="status-block">
+            <div class="status-line" id="statusLine">Connecting…</div>
+            <div class="status-sub"  id="statusSub">since —</div>
+          </div>
+          <div class="row">
+            <button class="btn ghost" id="resetCountersBtn" data-testid="reset-counters-btn">Reset session counters</button>
+          </div>
+          <div class="counters-mini" id="countersMini"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="tab" data-tab="alerts" hidden>
+      <h2 class="tab-title">Alerts</h2>
+      <div class="grid two-thin-preview">
+        <div class="stack" id="alertsForms"></div>
+        <div class="preview-wrap">
+          <div class="card">
+            <div class="card-title">Live preview</div>
+            <iframe class="preview" src="/overlay/alerts?demo=1" data-testid="preview-alerts"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="tab" data-tab="chat" hidden>
+      <h2 class="tab-title">Chat box</h2>
+      <div class="grid two-thin-preview">
+        <div class="card" id="chatForm"></div>
+        <div class="preview-wrap">
+          <div class="card">
+            <div class="card-title">Live preview</div>
+            <iframe class="preview" src="/overlay/chat?demo=1" data-testid="preview-chat"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOAL -->
+    <div class="tab" data-tab="goal" hidden>
+      <h2 class="tab-title">Follower goal</h2>
+      <div class="grid two-thin-preview">
+        <div class="card" id="goalForm"></div>
+        <div class="preview-wrap">
+          <div class="card">
+            <div class="card-title">Live preview</div>
+            <iframe class="preview short" src="/overlay/goal?demo=1" data-testid="preview-goal"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="tab" data-tab="stats" hidden>
+      <h2 class="tab-title">Counters</h2>
+      <div class="grid two-thin-preview">
+        <div class="card" id="statsForm"></div>
+        <div class="preview-wrap">
+          <div class="card">
+            <div class="card-title">Live preview</div>
+            <iframe class="preview" src="/overlay/stats?demo=1" data-testid="preview-stats"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TICKER -->
+    <div class="tab" data-tab="ticker" hidden>
+      <h2 class="tab-title">Recent-events ticker</h2>
+      <div class="grid two-thin-preview">
+        <div class="card" id="tickerForm"></div>
+        <div class="preview-wrap">
+          <div class="card">
+            <div class="card-title">Live preview</div>
+            <iframe class="preview short" src="/overlay/ticker?demo=1" data-testid="preview-ticker"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UPLOADS -->
+    <div class="tab" data-tab="uploads" hidden>
+      <h2 class="tab-title">Sounds &amp; images</h2>
+      <div class="card">
+        <div class="card-title">Upload new</div>
+        <p class="hint">mp3, ogg, wav for sounds — png, jpg, gif, webp, svg for images. 5&nbsp;MB max.</p>
+        <div class="row">
+          <input type="file" id="uploadInput" accept="audio/*,image/*" data-testid="upload-input" />
+          <button class="btn primary" id="uploadBtn" data-testid="upload-btn">Upload</button>
+          <span class="hint" id="uploadStatus"></span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title">Library</div>
+        <div class="uploads-grid" id="uploadsList" data-testid="uploads-list"></div>
+      </div>
+    </div>
+
+    <!-- TESTING -->
+    <div class="tab" data-tab="testing" hidden>
+      <h2 class="tab-title">Test &amp; demo</h2>
+      <div class="grid two">
+        <div class="card">
+          <div class="card-title">Fake events</div>
+          <p class="hint">Push a fake event through the real pipeline. Every overlay listening (browser sources included) receives it.</p>
+          <div class="testgrid">
+            <button class="btn" data-fire="follow"    data-testid="fire-follow">Follow</button>
+            <button class="btn" data-fire="gift"      data-testid="fire-gift">Gift</button>
+            <button class="btn" data-fire="like"      data-testid="fire-like">Like</button>
+            <button class="btn" data-fire="share"     data-testid="fire-share">Share</button>
+            <button class="btn" data-fire="subscribe" data-testid="fire-subscribe">Subscribe</button>
+            <button class="btn" data-fire="comment"   data-testid="fire-comment">Comment</button>
+            <button class="btn" data-fire="join"      data-testid="fire-join">Join</button>
+            <button class="btn" data-fire="viewers"   data-testid="fire-viewers">Viewers</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Demo mode</div>
+          <p class="hint">Fires randomised fake events every 3–8 seconds. Perfect for previewing overlays before going live. Runs server-side so OBS browser sources also receive them.</p>
+          <div class="row">
+            <button class="btn primary" id="demoStartBtn" data-testid="demo-start-btn">Start demo</button>
+            <button class="btn ghost"   id="demoStopBtn"  data-testid="demo-stop-btn">Stop demo</button>
+            <span class="hint" id="demoStatus"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOG -->
+    <div class="tab" data-tab="log" hidden>
+      <h2 class="tab-title">Event log <span class="tab-title-sub">(last 500)</span></h2>
+      <div class="card">
+        <div class="row" style="justify-content:space-between; margin-bottom: 10px;">
+          <div class="hint">Rolling log of every normalised event. Latest at the top.</div>
+          <button class="btn ghost" id="refreshLogBtn" data-testid="refresh-log-btn">Refresh</button>
+        </div>
+        <div class="log-list" id="logList" data-testid="log-list"></div>
+      </div>
+    </div>
+
+    <!-- OBS -->
+    <div class="tab" data-tab="obs" hidden>
+      <h2 class="tab-title">Add to OBS &amp; TikTok LIVE Studio</h2>
+      <div class="card">
+        <div class="card-title">Overlay URLs</div>
+        <p class="hint">In OBS: <strong>+</strong> → <strong>Browser</strong> → paste the URL. Set width/height to match your canvas (1080×1920 portrait works everywhere; 1920×1080 for landscape).</p>
+        <div class="urls" id="urlList" data-testid="url-list"></div>
+        <div class="hint" style="margin-top: 16px;">
+          <strong>Tip:</strong> tick <em>“Shutdown source when not visible”</em> off, and <em>“Refresh browser when scene becomes active”</em> on, so alerts don't miss when you switch scenes.
+        </div>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<div id="toast" class="toast" data-testid="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/dashboard-assets/dashboard.js"></script>
+</body>
+</html>

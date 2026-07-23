@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Lobo — Chat</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/overlay-base.css" />
+<style>
+  #feed {
+    position: fixed; left: 24px; right: 24px; bottom: 24px;
+    display: flex; flex-direction: column; gap: 10px;
+    max-height: 92vh; overflow: hidden;
+  }
+  .msg {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: linear-gradient(90deg, rgba(10,10,11,0.85), rgba(10,10,11,0.55) 80%, rgba(10,10,11,0));
+    padding: 10px 16px 10px 12px;
+    border-left: 4px solid var(--blood);
+    max-width: 640px;
+    animation: slideIn 240ms cubic-bezier(.2,.85,.25,1) both;
+  }
+  .msg.fade { animation: fadeOut 400ms ease-out both; }
+  @keyframes slideIn {
+    0%   { transform: translateX(-30px) skewX(-6deg); opacity: 0; }
+    100% { transform: translateX(0) skewX(0); opacity: 1; }
+  }
+  @keyframes fadeOut {
+    0%   { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateX(30px); }
+  }
+  .avatar {
+    width: 40px; height: 40px; flex: 0 0 40px;
+    border-radius: 4px; background: #1a1a1e;
+    display: grid; place-items: center;
+    font-family:'Anton',sans-serif; font-size: 22px; color: var(--bone);
+    overflow: hidden;
+  }
+  .avatar img { width:100%; height:100%; object-fit:cover; }
+  .body { flex: 1; min-width: 0; }
+  .name {
+    font-family: 'Anton', sans-serif; font-size: 20px; letter-spacing: 0.03em;
+    text-transform: uppercase; line-height: 1;
+  }
+  .text {
+    font: 500 18px 'Inter', sans-serif; color: var(--bone);
+    margin-top: 4px; word-wrap: break-word;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+  }
+</style>
+</head>
+<body>
+  <div id="feed" data-testid="chat-feed"></div>
+  <script src="/static/overlay-base.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const feed = document.getElementById('feed');
+    const BAD_WORDS = ['fuck','shit','bitch','asshole','cunt','dick','pussy','nigger','faggot'];
+
+    function filter(text, on) {
+      if (!on) return text;
+      let out = text;
+      for (const w of BAD_WORDS) {
+        out = out.replace(new RegExp(w, 'ig'), '*'.repeat(w.length));
+      }
+      return out;
+    }
+
+    function initialForName(name) { return (name || '?').trim().charAt(0).toUpperCase() || '?'; }
+
+    function colorFor(user, cfg) {
+      const roles = (cfg.chat && cfg.chat.roleColors) || {};
+      // Heuristic role detection: nickname prefix conventions from tiktok-live-connector
+      if (user && user.isModerator) return roles.mod || roles.default;
+      if (user && user.isSubscriber) return roles.gifter || roles.default;
+      return roles.default || '#EDEDEA';
+    }
+
+    function push(ev) {
+      const cfg = LOBO.config || {};
+      const chatCfg = cfg.chat || {};
+      const uname = (ev.user && (ev.user.nickname || ev.user.username)) || 'anon';
+      const raw = (ev.value && ev.value.comment) || '';
+      let text = raw.slice(0, chatCfg.maxLength || 180);
+      text = filter(text, chatCfg.profanityFilter !== false);
+
+      const row = document.createElement('div');
+      row.className = 'msg';
+      row.dataset.testid = 'chat-message';
+      const avatar = ev.user && ev.user.avatarUrl && chatCfg.showAvatars !== false
+        ? `<img src="${LOBO.escapeHTML(ev.user.avatarUrl)}" alt="">`
+        : LOBO.escapeHTML(initialForName(uname));
+      row.innerHTML = `
+        <div class="avatar">${avatar}</div>
+        <div class="body">
+          <div class="name" style="color: ${colorFor(ev.user, cfg)}">${LOBO.escapeHTML(uname)}</div>
+          <div class="text">${LOBO.escapeHTML(text)}</div>
+        </div>`;
+      feed.appendChild(row);
+
+      // Cap number of messages shown
+      const max = chatCfg.maxMessages || 40;
+      while (feed.children.length > max) feed.firstElementChild.remove();
+
+      // Fade after N ms
+      const fadeAfter = chatCfg.fadeAfter;
+      if (fadeAfter && fadeAfter > 0) {
+        setTimeout(() => {
+          row.classList.add('fade');
+          setTimeout(() => row.remove(), 420);
+        }, fadeAfter);
+      }
+    }
+
+    LOBO.on('event', ev => { if (ev.type === 'comment') push(ev); });
+  </script>
+</body>
+</html>

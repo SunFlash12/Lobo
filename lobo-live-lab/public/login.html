@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Lobo Live Lab — LOG IN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:#0A0A0B; --bone:#EDEDEA; --blood:#C8102E; --steel:#8A8F98; --swamp:#3E5F3A;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; background:var(--ink); color:var(--bone); font-family:'Inter',sans-serif; }
+  body { display:grid; place-items:center; overflow:hidden; position:relative; }
+  body::before {
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background-image:
+      radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1px 2px;
+    mix-blend-mode: overlay;
+    opacity: 0.6;
+  }
+  .card {
+    width: min(420px, 92vw);
+    padding: 44px 40px 36px;
+    background: #111113;
+    border: 1px solid #1e1e22;
+    border-left: 4px solid var(--blood);
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 30px 60px rgba(0,0,0,.6);
+  }
+  .card::after {
+    content:''; position:absolute; right:-1px; top:-1px; width:64px; height:6px;
+    background: var(--blood);
+  }
+  h1 {
+    font-family: 'Anton', sans-serif; letter-spacing: 0.02em;
+    font-size: 44px; line-height: 1; margin: 0 0 4px;
+    text-transform: uppercase;
+  }
+  .sub { color: var(--steel); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 28px; }
+  label { display:block; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--steel); margin: 0 0 8px; }
+  input[type="password"] {
+    width:100%; padding:14px 16px; background:#0A0A0B; color: var(--bone);
+    border:1px solid #26262c; font: 500 15px 'Inter', sans-serif; outline:none;
+    transition: border-color .15s ease;
+  }
+  input[type="password"]:focus { border-color: var(--blood); }
+  button {
+    margin-top: 18px; width:100%; padding: 14px 16px; background:var(--blood); color:#fff; border:none;
+    font: 700 14px 'Inter', sans-serif; letter-spacing: 0.16em; text-transform: uppercase; cursor:pointer;
+    transition: transform .12s ease, background .12s ease;
+  }
+  button:hover { background: #E0142F; transform: translateY(-1px); }
+  button:active { transform: translateY(0); }
+  .err { color: var(--blood); font-size: 13px; margin-top: 12px; min-height: 18px; letter-spacing: 0.02em; }
+  .claw { position:absolute; left:-14px; top:32px; width: 220px; opacity: .45; pointer-events:none; }
+  .foot { margin-top: 24px; font-size:11px; color:#555860; text-transform: uppercase; letter-spacing: 0.16em; }
+</style>
+</head>
+<body>
+  <form class="card" id="loginForm" autocomplete="off">
+    <svg class="claw" viewBox="0 0 200 200" aria-hidden="true"><g fill="none" stroke="#C8102E" stroke-width="6" stroke-linecap="round">
+      <path d="M20,180 Q60,90 190,20" opacity="0.7"/>
+      <path d="M10,170 Q55,80 175,10" opacity="0.5"/>
+      <path d="M30,190 Q80,110 200,40" opacity="0.35"/>
+    </g></svg>
+    <h1>LOBO<br/>LIVE LAB</h1>
+    <div class="sub">Enter the pack</div>
+    <label for="pw">Password</label>
+    <input id="pw" type="password" data-testid="login-password" required autofocus />
+    <button type="submit" data-testid="login-submit">Unlock the panel</button>
+    <div class="err" id="err" data-testid="login-error"></div>
+    <div class="foot">TikTok LIVE overlays · alerts · counters</div>
+  </form>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pw = document.getElementById('pw').value;
+      const err = document.getElementById('err');
+      err.textContent = '';
+      try {
+        const r = await fetch('/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw })});
+        const j = await r.json();
+        if (r.ok && j.ok) { location.href = '/dashboard'; }
+        else { err.textContent = j.error || 'Rejected.'; }
+      } catch (e2) {
+        err.textContent = 'Network error.';
+      }
+    });
+  </script>
+</body>
+</html>

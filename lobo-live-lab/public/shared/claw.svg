@@ -1,0 +1,14 @@
+<!-- Reusable claw-slash SVG (three ragged diagonal gashes) — inlined by overlays too. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200" aria-hidden="true">
+  <defs>
+    <filter id="rough">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7"/>
+      <feDisplacementMap in="SourceGraphic" scale="4"/>
+    </filter>
+  </defs>
+  <g fill="none" stroke="#C8102E" stroke-width="8" stroke-linecap="round" filter="url(#rough)">
+    <path d="M20,170 Q120,80 380,20" opacity="0.95"/>
+    <path d="M40,190 Q140,110 390,60"  opacity="0.75"/>
+    <path d="M10,150 Q100,60 360,10"   opacity="0.55"/>
+  </g>
+</svg>

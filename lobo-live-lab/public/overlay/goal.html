@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Lobo — Goal</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/overlay-base.css" />
+<style>
+  #goal {
+    position: fixed; left: 24px; right: 24px; bottom: 24px;
+    padding: 18px 24px 22px;
+    background: linear-gradient(90deg, rgba(10,10,11,0.92), rgba(10,10,11,0.7));
+    border-left: 6px solid var(--blood);
+  }
+  .row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .label {
+    font-family: 'Anton', sans-serif; font-size: 30px; letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .count {
+    font-family: 'Anton', sans-serif; font-size: 28px; color: var(--bone);
+  }
+  .count .cur { color: var(--blood); }
+  .track {
+    height: 22px; background: #17171a;
+    border: 1px solid #2a2a30;
+    position: relative; overflow: hidden;
+  }
+  .fill {
+    position: absolute; inset: 0 auto 0 0; width: 0%;
+    background: linear-gradient(90deg, var(--blood), #E0142F);
+    transition: width 600ms cubic-bezier(.2,.85,.25,1);
+  }
+  .fill::after {
+    content:''; position:absolute; inset:0;
+    background: repeating-linear-gradient(45deg, rgba(0,0,0,0.15) 0 8px, transparent 8px 16px);
+  }
+  .pulse { animation: pulse 500ms ease-out; }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(200,16,46,0.5); }
+    100% { box-shadow: 0 0 0 30px rgba(200,16,46,0); }
+  }
+</style>
+</head>
+<body>
+  <div id="goal" class="grain" data-testid="goal-widget">
+    <div class="row">
+      <div class="label" id="label">ROAD TO 10K</div>
+      <div class="count"><span class="cur" id="cur">0</span> / <span id="tgt">10000</span></div>
+    </div>
+    <div class="track"><div class="fill" id="fill"></div></div>
+  </div>
+  <script src="/static/overlay-base.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const label = document.getElementById('label');
+    const cur = document.getElementById('cur');
+    const tgt = document.getElementById('tgt');
+    const fill = document.getElementById('fill');
+
+    function render() {
+      const g = (LOBO.config && LOBO.config.goal) || { label:'ROAD TO 10K', start:0, target:10000, current:0 };
+      label.textContent = g.label || 'GOAL';
+      tgt.textContent = g.target;
+      const value = Math.max(g.start || 0, g.current || 0);
+      cur.textContent = value;
+      const pct = Math.max(0, Math.min(100, ((value - (g.start||0)) / Math.max(1, (g.target - (g.start||0)))) * 100));
+      fill.style.width = pct + '%';
+    }
+
+    LOBO.on('hello', render);
+    LOBO.on('config', render);
+    LOBO.on('event', (ev) => {
+      if (ev.type !== 'follow') return;
+      const g = (LOBO.config && LOBO.config.goal) || null;
+      if (!g) return;
+      g.current = (g.current || 0) + 1;
+      render();
+      fill.classList.remove('pulse'); void fill.offsetWidth; fill.classList.add('pulse');
+    });
+  </script>
+</body>
+</html>
