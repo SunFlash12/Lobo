@@ -12,7 +12,6 @@ try {
   WebcastEvent = lib.WebcastEvent;
   ControlEvent = lib.ControlEvent;
 } catch (e) {
-  // eslint-disable-next-line no-console
   console.warn('[tiktok] tiktok-live-connector not available:', e && e.message);
 }
 
@@ -101,7 +100,6 @@ class TikTokManager {
         if (this._loggedErrorThisAttempt) return;
         this._loggedErrorThisAttempt = true;
         const msg = (payload && payload.exception && payload.exception.message) || (payload && payload.info) || 'unknown';
-        // eslint-disable-next-line no-console
         console.warn('[tiktok] error:', msg);
       });
     } catch (_e) { /* ignore */ }

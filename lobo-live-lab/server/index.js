@@ -184,7 +184,6 @@ if (cfg.connection.demoMode || (process.env.DEMO_MODE || 'false') === 'true') {
 tiktok.connect(cfg.connection.username);
 
 server.listen(PORT, () => {
-  // eslint-disable-next-line no-console
   console.log(`\n  Lobo Live Lab — listening on http://localhost:${PORT}`);
   console.log(`  Dashboard: http://localhost:${PORT}/dashboard`);
   console.log(`  Password : ${process.env.DASHBOARD_PASSWORD ? '(set in .env)' : 'Bladestrex (default — change me!)'}`);

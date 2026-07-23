@@ -4,14 +4,26 @@
 const { v4: uuid } = require('uuid');
 
 const SCHEMA_VERSION = 1;
+const SEEN_TTL_MS = 5 * 60 * 1000;
+const SEEN_GC_INTERVAL_MS = 60 * 1000;
+const STREAK_TIMEOUT_MS = 3000;
+const MAX_COMMENT_LENGTH = 500;
+
+// -------- Dedupe (rolling window of event ids) --------
 const seen = new Map(); // id -> ts
-const SEEN_TTL = 5 * 60 * 1000;
 function seenGC() {
-  const cutoff = Date.now() - SEEN_TTL;
+  const cutoff = Date.now() - SEEN_TTL_MS;
   for (const [k, ts] of seen) if (ts < cutoff) seen.delete(k);
 }
-setInterval(seenGC, 60_000).unref();
+setInterval(seenGC, SEEN_GC_INTERVAL_MS).unref();
 
+function dedupe(ev) {
+  if (seen.has(ev.id)) return null;
+  seen.set(ev.id, Date.now());
+  return ev;
+}
+
+// -------- Event factory --------
 function makeEvent(type, data, value) {
   const u = (data && data.user) ? data.user : {};
   const avatar =
@@ -32,15 +44,13 @@ function makeEvent(type, data, value) {
   };
 }
 
-function dedupe(ev) {
-  if (seen.has(ev.id)) return null;
-  seen.set(ev.id, Date.now());
-  return ev;
+function emitDeduped(ev, emit) {
+  const kept = dedupe(ev);
+  if (kept) emit(kept);
 }
 
-// Gift streak state per (userId + giftId)
-const streaks = new Map(); // key -> { user, gift, repeatCount, coins, lastTs, timer }
-const STREAK_TIMEOUT_MS = 3000;
+// -------- Gift streak state (per user + gift) --------
+const streaks = new Map();
 
 function streakKey(data, gift) {
   const u = (data && data.user) || {};
@@ -64,120 +74,103 @@ function finaliseStreak(key, emit) {
   emit(ev);
 }
 
-// Public: normalise raw event; some events are async (gift streaks) so we accept an emitter.
+// -------- Per-event-type handlers --------
+function handleChat(data, emit) {
+  emitDeduped(makeEvent('comment', data, {
+    comment: (data.comment || '').toString().slice(0, MAX_COMMENT_LENGTH),
+  }), emit);
+}
+
+function handleLike(data, emit) {
+  emitDeduped(makeEvent('like', data, {
+    likeCount: data.likeCount || 1,
+    totalLikeCount: data.totalLikeCount || 0,
+  }), emit);
+}
+
+function handleSocial(data, emit) {
+  // v2 exposes an `action` string that hints at follow/share
+  const action = (data.action || data.displayType || '').toString().toLowerCase();
+  if (action.includes('follow'))      emitDeduped(makeEvent('follow', data, {}),          emit);
+  else if (action.includes('share'))  emitDeduped(makeEvent('share',  data, {}),          emit);
+  else                                emitDeduped(makeEvent('social', data, { action }),  emit);
+}
+
+function handleFollow(data, emit)    { emitDeduped(makeEvent('follow', data, {}), emit); }
+function handleShare(data, emit)     { emitDeduped(makeEvent('share',  data, {}), emit); }
+function handleMember(data, emit)    { emitDeduped(makeEvent('join',   data, {}), emit); }
+
+function handleSubscribe(data, emit) {
+  emitDeduped(makeEvent('subscribe', data, { subMonth: data.subMonth || 1 }), emit);
+}
+
+function handleStreamEnd(data, emit) {
+  emitDeduped(makeEvent('streamEnd', {}, { reason: data && data.actionId }), emit);
+}
+
+function handleConnected(data, emit) {
+  emitDeduped(makeEvent('streamStart', {}, { roomId: data && data.roomId }), emit);
+}
+
+function handleGift(data, emit) {
+  const details = data.giftDetails || {};
+  const giftType = details.giftType != null ? details.giftType : data.giftType;
+  // v2 field naming: repeatEnd is boolean, repeatCount is cumulative during streak
+  const isStreakable = giftType === 1;
+  const repeatEnd = data.repeatEnd === true || data.repeatEnd === 1;
+  const repeatCount = data.repeatCount || 1;
+  const diamond = details.diamondCount || data.diamondCount || 0;
+  const giftName = details.giftName || data.giftName || 'Gift';
+  const giftId = data.giftId || details.giftId;
+  const coins = diamond * repeatCount;
+
+  if (!isStreakable) {
+    emitDeduped(makeEvent('gift', data, {
+      giftId, giftName, repeatCount, coins, diamondCount: diamond,
+    }), emit);
+    return;
+  }
+
+  // Streakable: buffer until repeatEnd or STREAK_TIMEOUT_MS silence
+  const key = streakKey(data, { giftId, name: giftName });
+  const prev = streaks.get(key);
+  const state = prev || {
+    user: data, giftId, giftName,
+    repeatCount: 0, coins: 0, diamondCount: diamond,
+    timer: null,
+  };
+  state.repeatCount = repeatCount; // cumulative from TikTok during a streak
+  state.coins = coins;
+  state.diamondCount = diamond;
+  state.user = data;
+  if (state.timer) clearTimeout(state.timer);
+  state.timer = setTimeout(() => finaliseStreak(key, emit), STREAK_TIMEOUT_MS);
+  streaks.set(key, state);
+  if (repeatEnd) finaliseStreak(key, emit);
+}
+
+// -------- Dispatch table (kept tiny; each handler is <20 lines) --------
+const HANDLERS = {
+  chat:      handleChat,
+  like:      handleLike,
+  social:    handleSocial,
+  follow:    handleFollow,
+  share:     handleShare,
+  member:    handleMember,
+  subscribe: handleSubscribe,
+  gift:      handleGift,
+  streamEnd: handleStreamEnd,
+  connected: handleConnected,
+};
+
+// Public entry point. Some events are async (gift streaks) so we accept an emitter.
 function handleRaw(rawType, data, emit) {
+  const fn = HANDLERS[rawType];
+  if (!fn) return; // silently ignore unknown raw types
   try {
-    switch (rawType) {
-      case 'chat': {
-        const ev = dedupe(makeEvent('comment', data, {
-          comment: (data.comment || '').toString().slice(0, 500),
-        }));
-        if (ev) emit(ev);
-        break;
-      }
-      case 'like': {
-        const ev = dedupe(makeEvent('like', data, {
-          likeCount: data.likeCount || 1,
-          totalLikeCount: data.totalLikeCount || 0,
-        }));
-        if (ev) emit(ev);
-        break;
-      }
-      case 'social': {
-        // v2 exposes an `action` string that hints at follow/share
-        const action = (data.action || data.displayType || '').toString().toLowerCase();
-        if (action.includes('follow')) {
-          const ev = dedupe(makeEvent('follow', data, {}));
-          if (ev) emit(ev);
-        } else if (action.includes('share')) {
-          const ev = dedupe(makeEvent('share', data, {}));
-          if (ev) emit(ev);
-        } else {
-          const ev = dedupe(makeEvent('social', data, { action }));
-          if (ev) emit(ev);
-        }
-        break;
-      }
-      case 'follow': {
-        const ev = dedupe(makeEvent('follow', data, {}));
-        if (ev) emit(ev);
-        break;
-      }
-      case 'share': {
-        const ev = dedupe(makeEvent('share', data, {}));
-        if (ev) emit(ev);
-        break;
-      }
-      case 'subscribe': {
-        const ev = dedupe(makeEvent('subscribe', data, {
-          subMonth: data.subMonth || 1,
-        }));
-        if (ev) emit(ev);
-        break;
-      }
-      case 'member': {
-        const ev = dedupe(makeEvent('join', data, {}));
-        if (ev) emit(ev);
-        break;
-      }
-      case 'gift': {
-        const details = data.giftDetails || {};
-        const giftType = details.giftType != null ? details.giftType : data.giftType;
-        // v2 field naming: repeatEnd is boolean, repeatCount is cumulative during streak
-        const isStreakable = giftType === 1;
-        const repeatEnd = data.repeatEnd === true || data.repeatEnd === 1;
-        const repeatCount = data.repeatCount || 1;
-        const diamond = details.diamondCount || data.diamondCount || 0;
-        const giftName = details.giftName || data.giftName || 'Gift';
-        const giftId = data.giftId || details.giftId;
-        const coins = diamond * repeatCount;
-
-        if (!isStreakable) {
-          const ev = dedupe(makeEvent('gift', data, {
-            giftId, giftName, repeatCount, coins, diamondCount: diamond,
-          }));
-          if (ev) emit(ev);
-          break;
-        }
-
-        // Streakable: buffer until repeatEnd or timeout
-        const key = streakKey(data, { giftId, name: giftName });
-        const prev = streaks.get(key);
-        const totalCoins = diamond * repeatCount;
-        const state = prev || {
-          user: data, giftId, giftName,
-          repeatCount: 0, coins: 0, diamondCount: diamond,
-          timer: null,
-        };
-        state.repeatCount = repeatCount; // repeatCount is cumulative from TikTok
-        state.coins = totalCoins;
-        state.diamondCount = diamond;
-        state.user = data;
-        if (state.timer) clearTimeout(state.timer);
-        state.timer = setTimeout(() => finaliseStreak(key, emit), STREAK_TIMEOUT_MS);
-        streaks.set(key, state);
-        if (repeatEnd) finaliseStreak(key, emit);
-        break;
-      }
-      case 'streamEnd': {
-        const ev = dedupe(makeEvent('streamEnd', {}, { reason: data && data.actionId }));
-        if (ev) emit(ev);
-        break;
-      }
-      case 'connected': {
-        const ev = dedupe(makeEvent('streamStart', {}, {
-          roomId: data && data.roomId,
-        }));
-        if (ev) emit(ev);
-        break;
-      }
-      default: {
-        // ignore unknown raw types silently
-      }
-    }
+    fn(data, emit);
   } catch (e) {
     // Never throw from normaliser
-    // eslint-disable-next-line no-console
     console.warn('[normaliser] error handling', rawType, e && e.message);
   }
 }

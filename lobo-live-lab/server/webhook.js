@@ -16,7 +16,6 @@ async function dispatch(ev) {
     });
   } catch (e) {
     // Don't crash the pipeline on webhook failure
-    // eslint-disable-next-line no-console
     console.warn('[webhook] dispatch failed:', e && e.message);
   }
 }
