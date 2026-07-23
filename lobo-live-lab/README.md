@@ -220,7 +220,7 @@ data/
 | Var | Default | Purpose |
 |---|---|---|
 | `PORT` | `3000` | HTTP port |
-| `TIKTOK_USERNAME` | `lobothemainman` | Initial username on boot |
+| `TIKTOK_USERNAME` | `zxpsychojokerxz1` | Initial username on boot |
 | `DASHBOARD_PASSWORD` | `Bladestrex` | Password for `/dashboard` |
 | `SESSION_SECRET` | (fallback) | Cookie signing secret |
 | `DEMO_MODE` | `false` | Auto-start demo on boot |

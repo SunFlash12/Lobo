@@ -181,3 +181,81 @@ test('dedupe drops repeated ids', () => {
   assert.ok(dedupe(ev), 'first pass keeps event');
   assert.equal(dedupe(ev), null, 'second pass drops it');
 });
+
+// ---------------------------------------------------------------------------
+// RAW v3 proto shapes — what tiktok-live-connector 2.4.x actually emits.
+// (username in displayId, chat text in content, gift meta in data.gift, etc.)
+// ---------------------------------------------------------------------------
+function v3User(overrides = {}) {
+  return {
+    id: '99887',
+    displayId: 'zx_fan_01',
+    nickname: 'ZX Fan',
+    avatarThumb: { urlList: ['https://cdn.example.com/thumb.webp'] },
+    ...overrides,
+  };
+}
+
+test('v3 chat: content + displayId + avatarThumb.urlList', () => {
+  const c = collector();
+  handleRaw('chat', { user: v3User(), content: 'W stream' }, c.emit);
+  const ev = c.out[0];
+  assert.equal(ev.type, 'comment');
+  assert.equal(ev.value.comment, 'W stream');
+  assert.equal(ev.user.username, 'zx_fan_01');
+  assert.equal(ev.user.nickname, 'ZX Fan');
+  assert.equal(ev.user.avatarUrl, 'https://cdn.example.com/thumb.webp');
+  assert.equal(ev.user.id, '99887');
+});
+
+test('v3 like: count + total (string)', () => {
+  const c = collector();
+  handleRaw('like', { user: v3User(), count: 15, total: '80211' }, c.emit);
+  assert.equal(c.out[0].value.likeCount, 15);
+  assert.equal(c.out[0].value.totalLikeCount, 80211);
+});
+
+test('v3 social: common.displayText.key containing follow → follow event', () => {
+  const c = collector();
+  handleRaw('social', {
+    user: v3User(),
+    common: { displayText: { key: 'pm_main_follow_message_viewer_2' } },
+  }, c.emit);
+  assert.equal(c.out[0].type, 'follow');
+});
+
+test('v3 gift non-combo fires immediately with gift.name/diamondCount', () => {
+  const c = collector();
+  handleRaw('gift', {
+    user: v3User(),
+    giftId: '6221',
+    repeatCount: 1,
+    repeatEnd: 0,
+    gift: { id: '6221', name: 'Galaxy', diamondCount: 1000, combo: false, type: 2 },
+  }, c.emit);
+  assert.equal(c.out.length, 1);
+  assert.equal(c.out[0].value.giftName, 'Galaxy');
+  assert.equal(c.out[0].value.coins, 1000);
+});
+
+test('v3 combo gift buffers until repeatEnd=1 (number)', () => {
+  const c = collector();
+  const base = {
+    user: v3User({ id: '424242' }),
+    giftId: '5655',
+    gift: { id: '5655', name: 'Rose', diamondCount: 1, combo: true, type: 1 },
+  };
+  handleRaw('gift', { ...base, repeatCount: 2, repeatEnd: 0 }, c.emit);
+  handleRaw('gift', { ...base, repeatCount: 7, repeatEnd: 0 }, c.emit);
+  assert.equal(c.out.length, 0, 'no emission during combo streak');
+  handleRaw('gift', { ...base, repeatCount: 7, repeatEnd: 1 }, c.emit);
+  assert.equal(c.out.length, 1);
+  assert.equal(c.out[0].value.repeatCount, 7);
+  assert.equal(c.out[0].value.coins, 7);
+});
+
+test('v3 subscribe: subMonth arrives as string', () => {
+  const c = collector();
+  handleRaw('subscribe', { user: v3User(), subMonth: '3' }, c.emit);
+  assert.equal(c.out[0].value.subMonth, 3);
+});

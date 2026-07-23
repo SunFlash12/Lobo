@@ -54,7 +54,7 @@ function setKV(key, value) {
 // ---------- Config defaults ----------
 const DEFAULT_CONFIG = {
   connection: {
-    username: process.env.TIKTOK_USERNAME || 'lobothemainman',
+    username: process.env.TIKTOK_USERNAME || 'zxpsychojokerxz1',
     demoMode: (process.env.DEMO_MODE || 'false') === 'true',
   },
   alerts: {

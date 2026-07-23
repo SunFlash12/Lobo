@@ -63,8 +63,17 @@ class TikTokManager {
     }
 
     // Wire message events -> normaliser -> bus
+    const seenTypes = new Set(); // diagnostic: log first event of each type per attempt
     const wire = (evName, tag) => {
-      try { this.conn.on(evName, (data) => handleRaw(tag, data, (ev) => bus.publish(ev))); } catch (_e) { /* ignore */ }
+      try {
+        this.conn.on(evName, (data) => {
+          if (!seenTypes.has(tag)) {
+            seenTypes.add(tag);
+            console.log(`[tiktok] receiving '${tag}' events from @${this.username}`);
+          }
+          handleRaw(tag, data, (ev) => bus.publish(ev));
+        });
+      } catch (_e) { /* ignore */ }
     };
     wire(WebcastEvent ? WebcastEvent.CHAT      : 'chat',      'chat');
     wire(WebcastEvent ? WebcastEvent.LIKE      : 'like',      'like');
@@ -77,10 +86,12 @@ class TikTokManager {
     try { this.conn.on(WebcastEvent ? WebcastEvent.SUB_NOTIFY : 'subNotify', (d) => handleRaw('subscribe', d, (ev) => bus.publish(ev))); } catch (_e) { /* ignore */ }
     try {
       this.conn.on(WebcastEvent ? WebcastEvent.ROOM_USER : 'roomUser', (data) => {
+        // v3 proto renamed viewerCount -> total (string); keep legacy fallbacks
+        const viewers = Number(data && (data.total != null ? data.total : (data.viewerCount != null ? data.viewerCount : data.totalUser))) || 0;
         bus.publish({
           v: 1, id: 'rv-' + Date.now(), type: 'viewers',
           user: { id: '', username: '', nickname: '', avatarUrl: '' },
-          value: { viewerCount: data && data.viewerCount },
+          value: { viewerCount: viewers },
           ts: Date.now(),
         });
       });

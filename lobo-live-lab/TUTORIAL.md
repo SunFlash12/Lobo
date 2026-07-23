@@ -181,7 +181,7 @@ Reload the dashboard and log in with the new password.
 
 1. Click the **Connection** tab (left sidebar).
 2. In the **Username** field, type your TikTok username **without the `@`**
-   (e.g. `lobothemainman`).
+   (e.g. `zxpsychojokerxz1`).
 3. Click **Connect**.
 
 Watch the **status pill** in the top-right corner. It changes colour based on
@@ -196,7 +196,7 @@ what's happening:
 | 🔴 Red — "ERROR" | Something's wrong. Read the message under it. |
 
 **If you're not currently live-streaming, the pill will stay yellow** and say
-something like "Couldn't find @lobothemainman's room. They probably aren't
+something like "Couldn't find @zxpsychojokerxz1's room. They probably aren't
 live yet." That's normal — it'll try every few seconds and connect the moment
 you actually go live.
 
@@ -398,7 +398,7 @@ The `tiktok-live-connector` library the app uses is community-maintained. It
 sometimes gets blocked by TikTok's anti-bot systems, especially during peak
 hours. When that happens, the status pill stays yellow/red with a message like:
 
-> Couldn't find @lobothemainman's room. Either they aren't live yet, or
+> Couldn't find @zxpsychojokerxz1's room. Either they aren't live yet, or
 > TikTok blocked our request. If it keeps failing while you know you're live,
 > set SIGN_API_KEY (Euler Stream) in .env.
 
@@ -513,7 +513,7 @@ Full list of `.env` variables:
 | Variable | Default | Purpose |
 |---|---|---|
 | `PORT` | `3000` | HTTP port the app listens on |
-| `TIKTOK_USERNAME` | `lobothemainman` | Initial username shown in the dashboard |
+| `TIKTOK_USERNAME` | `zxpsychojokerxz1` | Initial username shown in the dashboard |
 | `DASHBOARD_PASSWORD` | `Bladestrex` | Password for `/dashboard` |
 | `SESSION_SECRET` | (auto) | Signs the login cookie. Change it to invalidate all logged-in sessions. |
 | `DEMO_MODE` | `false` | Auto-start demo mode on boot |

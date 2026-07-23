@@ -24,19 +24,31 @@ function dedupe(ev) {
 }
 
 // -------- Event factory --------
+// Field shapes: tiktok-live-connector v2.4.x emits RAW tiktok-live-proto/v3
+// messages (username lives in `user.displayId`, avatars in `user.avatarThumb.
+// urlList`, etc.). We read v3 fields first and fall back to the legacy v1/v2
+// names so demo mode and older payloads keep working.
+function pickImageUrl(img) {
+  return (img && Array.isArray(img.urlList) && img.urlList[0]) || '';
+}
+
 function makeEvent(type, data, value) {
   const u = (data && data.user) ? data.user : {};
   const avatar =
+    pickImageUrl(u.avatarThumb) || pickImageUrl(u.avatarMedium) || pickImageUrl(u.avatarLarge) ||
     (u.profilePicture && (u.profilePicture.url || (Array.isArray(u.profilePicture.urls) && u.profilePicture.urls[0]))) ||
     u.profilePictureUrl || '';
+  const username = u.displayId || u.uniqueId || '';
+  const id = u.userId != null ? String(u.userId)
+    : (u.idStr || (u.id != null && String(u.id) !== '0' ? String(u.id) : '') || username);
   return {
     v: SCHEMA_VERSION,
     id: uuid(),
     type,
     user: {
-      id: (u.userId != null ? String(u.userId) : (u.uniqueId || '')),
-      username: u.uniqueId || '',
-      nickname: u.nickname || u.uniqueId || '',
+      id,
+      username,
+      nickname: u.nickname || username,
       avatarUrl: avatar,
     },
     value: value || {},
@@ -76,21 +88,26 @@ function finaliseStreak(key, emit) {
 
 // -------- Per-event-type handlers --------
 function handleChat(data, emit) {
+  // v3: `content`; legacy: `comment`
   emitDeduped(makeEvent('comment', data, {
-    comment: (data.comment || '').toString().slice(0, MAX_COMMENT_LENGTH),
+    comment: (data.content || data.comment || '').toString().slice(0, MAX_COMMENT_LENGTH),
   }), emit);
 }
 
 function handleLike(data, emit) {
+  // v3: `count` / `total`; legacy: `likeCount` / `totalLikeCount`
   emitDeduped(makeEvent('like', data, {
-    likeCount: data.likeCount || 1,
-    totalLikeCount: data.totalLikeCount || 0,
+    likeCount: data.count || data.likeCount || 1,
+    totalLikeCount: Number(data.total) || data.totalLikeCount || 0,
   }), emit);
 }
 
 function handleSocial(data, emit) {
-  // v2 exposes an `action` string that hints at follow/share
-  const action = (data.action || data.displayType || '').toString().toLowerCase();
+  // v3: intent is in common.displayText.key (e.g. "pm_main_follow_message_viewer_2");
+  // legacy: `action`/`displayType` strings. The connector already splits most
+  // follow/share socials into their own events, so this is a safety net.
+  const key = (data.common && data.common.displayText && data.common.displayText.key) || '';
+  const action = (key || data.action || data.displayType || '').toString().toLowerCase();
   if (action.includes('follow'))      emitDeduped(makeEvent('follow', data, {}),          emit);
   else if (action.includes('share'))  emitDeduped(makeEvent('share',  data, {}),          emit);
   else                                emitDeduped(makeEvent('social', data, { action }),  emit);
@@ -101,7 +118,8 @@ function handleShare(data, emit)     { emitDeduped(makeEvent('share',  data, {})
 function handleMember(data, emit)    { emitDeduped(makeEvent('join',   data, {}), emit); }
 
 function handleSubscribe(data, emit) {
-  emitDeduped(makeEvent('subscribe', data, { subMonth: data.subMonth || 1 }), emit);
+  // v3 sends subMonth as a string
+  emitDeduped(makeEvent('subscribe', data, { subMonth: Number(data.subMonth) || 1 }), emit);
 }
 
 function handleStreamEnd(data, emit) {
@@ -113,15 +131,18 @@ function handleConnected(data, emit) {
 }
 
 function handleGift(data, emit) {
-  const details = data.giftDetails || {};
-  const giftType = details.giftType != null ? details.giftType : data.giftType;
-  // v2 field naming: repeatEnd is boolean, repeatCount is cumulative during streak
-  const isStreakable = giftType === 1;
-  const repeatEnd = data.repeatEnd === true || data.repeatEnd === 1;
+  // v3: gift metadata lives in `data.gift` (Gift proto: type/name/diamondCount/combo);
+  // legacy: `data.giftDetails` (giftType/giftName/diamondCount).
+  const g = data.gift || data.giftDetails || {};
+  const giftType = g.type != null ? g.type : (g.giftType != null ? g.giftType : data.giftType);
+  // Streakable when giftType===1 (legacy) or the v3 Gift is combo-capable
+  const isStreakable = giftType === 1 || g.combo === true;
+  // v3 repeatEnd is a number (0/1), legacy is boolean
+  const repeatEnd = data.repeatEnd === true || Number(data.repeatEnd) >= 1;
   const repeatCount = data.repeatCount || 1;
-  const diamond = details.diamondCount || data.diamondCount || 0;
-  const giftName = details.giftName || data.giftName || 'Gift';
-  const giftId = data.giftId || details.giftId;
+  const diamond = g.diamondCount || data.diamondCount || 0;
+  const giftName = g.name || g.giftName || data.giftName || 'Gift';
+  const giftId = data.giftId || g.id || g.giftId;
   const coins = diamond * repeatCount;
 
   if (!isStreakable) {

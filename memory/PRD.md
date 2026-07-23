@@ -122,6 +122,32 @@ Node 20+), no bundler, no paid services required.
      video element mounted, playing (not paused), transparent over the alert
      card; dashboard select shows it selected.
 
+## Iteration 5 (2026-02) — "nothing happens on real interactions" fix
+Root causes found and fixed (verified against the REAL live stream):
+1. **Wrong username**: the app defaulted to `lobothemainman`, but the real
+   TikTok handle is **`zxpsychojokerxz1`**. Default updated everywhere
+   (db.js, .env.example, README, TUTORIAL, dashboard placeholder).
+   NOTE: users with an existing `data/config.json` must change the username
+   in Dashboard → Connection (stored config overrides the default).
+2. **Proto v3 field drift**: tiktok-live-connector 2.4.x emits RAW
+   tiktok-live-proto/v3 messages; its README is outdated. Normalizer was
+   reading fields that no longer exist. Fixed v3-first with legacy fallbacks:
+   - chat `comment` → `content`
+   - like `likeCount`/`totalLikeCount` → `count`/`total` (string)
+   - gift `giftDetails.{giftType,giftName,diamondCount}` → `gift.{type,name,diamondCount,combo}`;
+     `repeatEnd` now numeric
+   - user `uniqueId` → `displayId`; avatar `profilePicture` → `avatarThumb/Medium/Large.urlList[0]`
+   - viewers `viewerCount` → `total` (roomUser handler in tiktok.js)
+   - social follow/share detection via `common.displayText.key` (lib already
+     pre-splits most, kept as safety net)
+   - subscribe `subMonth` arrives as string → Number()
+3. Added diagnostics: `[tiktok] receiving '<type>' events from @user` logged
+   once per type per connection attempt.
+- ✅ Live verification: connected to @zxpsychojokerxz1 while actually live —
+  real comments with correct usernames/nicknames/avatars/text, likes with
+  counts, joins, viewer counts all normalized correctly; chat overlay renders.
+- ✅ Tests: 25/25 (19 legacy-shape + 6 new raw-v3-shape tests).
+
 ## Real-live-session test
 Requires @lobothemainman to actually be broadcasting on TikTok. From the sandbox
 we can only verify the "not live" reconnect loop, which is working and now
