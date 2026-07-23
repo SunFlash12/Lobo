@@ -84,7 +84,7 @@
             <div class="step-num">3</div>
             <div class="step-body">
               <div class="step-title">Upload sounds &amp; images</div>
-              <div class="step-sub"><button class="link-btn" data-jump="uploads">Sounds &amp; images</button> — mp3/ogg/wav (5 MB max) or png/jpg/gif/webp/svg. Short sounds land harder than long ones.</div>
+              <div class="step-sub"><button class="link-btn" data-jump="uploads">Sounds, images &amp; videos</button> — mp3/ogg/wav, png/jpg/gif/webp/svg, or mp4/webm video (25 MB max). Short sounds land harder than long ones.</div>
             </div>
           </li>
           <li class="onboard-step">
@@ -237,9 +237,9 @@
       <h2 class="tab-title">Sounds &amp; images</h2>
       <div class="card">
         <div class="card-title">Upload new</div>
-        <p class="hint">mp3, ogg, wav for sounds — png, jpg, gif, webp, svg for images. 5&nbsp;MB max.</p>
+        <p class="hint">mp3, ogg, wav for sounds — png, jpg, gif, webp, svg for images — mp4, webm for videos. 25&nbsp;MB max. Tip: webm with alpha (transparent background) looks best in OBS.</p>
         <div class="row">
-          <input type="file" id="uploadInput" accept="audio/*,image/*" data-testid="upload-input" />
+          <input type="file" id="uploadInput" accept="audio/*,image/*,video/mp4,video/webm" data-testid="upload-input" />
           <button class="btn primary" id="uploadBtn" data-testid="upload-btn">Upload</button>
           <span class="hint" id="uploadStatus"></span>
         </div>

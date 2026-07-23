@@ -181,7 +181,7 @@
           <label class="fld"><span>Sound</span>
             ${soundSelect(at.key, cfg.sound)}
           </label>
-          <label class="fld"><span>Image / GIF</span>
+          <label class="fld"><span>Image / GIF / Video</span>
             ${imageSelect(at.key, cfg.image)}
           </label>
           <label class="fld"><span>Volume: <em id="vol-${at.key}">${Math.round((cfg.volume||0.8)*100)}%</em></span>
@@ -354,7 +354,9 @@
       const card = document.createElement('div'); card.className = 'upload';
       const thumb = u.kind === 'audio'
         ? `<div class="thumb audio"><audio controls src="${u.url}"></audio></div>`
-        : `<div class="thumb"><img src="${u.url}" alt=""></div>`;
+        : (u.kind === 'video'
+          ? `<div class="thumb"><video src="${u.url}" autoplay muted loop playsinline style="max-width:100%;max-height:100%;"></video></div>`
+          : `<div class="thumb"><img src="${u.url}" alt=""></div>`);
       card.innerHTML = `
         ${thumb}
         <div class="name">${escHTML(u.filename)}</div>
@@ -400,8 +402,9 @@
   }
   function imageSelect(alertKey, current) {
     const options = ['<option value="">(none)</option>'];
-    for (const u of UPLOADS.filter(u => u.kind === 'image')) {
-      options.push(`<option value="${u.url}" ${u.url===current?'selected':''}>${escHTML(u.filename)}</option>`);
+    for (const u of UPLOADS.filter(u => u.kind === 'image' || u.kind === 'video')) {
+      const tag = u.kind === 'video' ? ' [video]' : '';
+      options.push(`<option value="${u.url}" ${u.url===current?'selected':''}>${escHTML(u.filename)}${tag}</option>`);
     }
     return `<select data-alert="${alertKey}" data-field="image" data-testid="alert-${alertKey}-image">${options.join('')}</select>`;
   }

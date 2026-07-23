@@ -105,6 +105,23 @@ Node 20+), no bundler, no paid services required.
 - ✅ Verified end-to-end: all endpoints, all 8 event types, counter persistence
      across restart, 19/19 normalizer unit tests.
 
+## Iteration 4 (2026-02) — starter art + video alerts
+- ✅ Chromakeyed the 3 user-uploaded character PNGs (green removed) and shipped
+     them in `assets/starter-images/`; `server/starters.js` auto-imports them
+     into the upload library on boot (idempotent).
+- ✅ User's Hailuo MP4 (green-screen Lobo howl animation) converted one-time via
+     ffmpeg chromakey → **VP9 webm with real alpha channel**
+     (`starter-lobo-howl.webm`). No green box in OBS.
+- ✅ Full video support in alerts: uploads now accept mp4/webm (25 MB cap, up
+     from 5 MB), `classify()` returns kind `video`, alerts overlay renders
+     `<video autoplay muted loop playsinline>` for video media, dashboard
+     media dropdown lists videos with a `[video]` tag, library grid shows
+     looping video thumbnails.
+- ✅ Default **follow** alert now uses the animated `starter-lobo-howl.webm`.
+- ✅ Verified end-to-end: boot auto-import (kind=video), demo follow fired →
+     video element mounted, playing (not paused), transparent over the alert
+     card; dashboard select shows it selected.
+
 ## Real-live-session test
 Requires @lobothemainman to actually be broadcasting on TikTok. From the sandbox
 we can only verify the "not live" reconnect loop, which is working and now

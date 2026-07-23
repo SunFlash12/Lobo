@@ -207,14 +207,19 @@ you actually go live.
 
 Click the **Sounds & Images** tab.
 
-- **Sounds**: mp3, ogg, or wav files. Under 5 MB each. Short is better (1-3s).
+- **Sounds**: mp3, ogg, or wav files. Under 25 MB each. Short is better (1-3s).
   You'll want at minimum:
   - A sound for **new followers** (something ominous or celebratory)
   - A sound for **gifts** (something rewarding)
   - Optional: a bigger "MEGA" sound for expensive gifts, a chime for
     subscribers, a whoosh for shares.
-- **Images / GIFs**: png, jpg, gif, webp, or svg. Under 5 MB each. Transparent
+- **Images / GIFs**: png, jpg, gif, webp, or svg. Under 25 MB each. Transparent
   PNGs work best (skulls, chains, claws, logos).
+- **Videos**: mp4 or webm clips. Under 25 MB, keep them short (3-8s). They
+  auto-play muted and loop while the alert is on screen. A **webm with an
+  alpha (transparent) background** looks best — the animated Lobo howl clip
+  that ships with the lab (`starter-lobo-howl.webm`) is exactly that, and is
+  wired up as the default **New follower** alert.
 
 For each file:
 1. Click **Choose File**, pick it, then click **Upload**.
@@ -246,7 +251,8 @@ There are five alert types, each in its own card. For each one:
 3. **Duration** — how long the alert stays on screen (in milliseconds; 5000 =
    5 seconds).
 4. **Sound** dropdown — pick one of your uploads. Or leave as `(none)`.
-5. **Image / GIF** dropdown — pick one of your uploads. Or leave as `(none)`.
+5. **Image / GIF / Video** dropdown — pick one of your uploads (videos are
+   tagged `[video]`). Or leave as `(none)`.
 6. **Volume** slider — 0% to 100%.
 7. **Test** button (next to volume) — pushes a fake alert of this type through
    the real system. Watch the preview iframe on the right to see it fire.

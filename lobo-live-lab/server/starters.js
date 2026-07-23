@@ -18,6 +18,8 @@ const EXT_MIME = {
   '.gif': 'image/gif',
   '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
 };
 
 function importStarters() {
@@ -42,7 +44,7 @@ function importStarters() {
         filename: entry,
         mime,
         size: stat.size,
-        kind: 'image',
+        kind: mime.startsWith('video/') ? 'video' : 'image',
       });
       imported += 1;
     } catch (e) {

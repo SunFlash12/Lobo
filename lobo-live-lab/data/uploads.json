@@ -1,0 +1,34 @@
+[
+  {
+    "id": "starter-new-fan",
+    "filename": "starter-new-fan.png",
+    "mime": "image/png",
+    "size": 3047466,
+    "kind": "image",
+    "created": 1784846924558
+  },
+  {
+    "id": "starter-lobo-pose",
+    "filename": "starter-lobo-pose.png",
+    "mime": "image/png",
+    "size": 1888917,
+    "kind": "image",
+    "created": 1784846924553
+  },
+  {
+    "id": "starter-lobo-howl",
+    "filename": "starter-lobo-howl.webm",
+    "mime": "video/webm",
+    "size": 4808337,
+    "kind": "video",
+    "created": 1784846924550
+  },
+  {
+    "id": "starter-choked",
+    "filename": "starter-choked.png",
+    "mime": "image/png",
+    "size": 2974375,
+    "kind": "image",
+    "created": 1784846924541
+  }
+]

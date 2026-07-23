@@ -46,6 +46,7 @@
     object-fit: contain; object-position: right bottom;
     opacity: 0.9; pointer-events: none;
   }
+  video.art { width: 240px; height: 300px; opacity: 1; }
   .alert .slash {
     position: absolute; inset: 0; pointer-events: none; opacity: .55;
   }
@@ -153,15 +154,20 @@
     }
     function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
+    function isVideo(url) { return /\.(webm|mp4|mov)(\?|$)/i.test(url || ''); }
+
     function render(item) {
       const el = document.createElement('div');
       el.className = 'alert enter ' + (item.variant || '');
       if (item.mega) el.classList.add('mega');
+      const media = !item.image ? '' : (isVideo(item.image)
+        ? `<video class="art" src="${LOBO.escapeHTML(item.image)}" autoplay muted loop playsinline></video>`
+        : `<img class="art" src="${LOBO.escapeHTML(item.image)}" alt="">`);
       el.innerHTML = `
         <div class="kicker" data-testid="alert-kicker">${LOBO.escapeHTML(item.kicker || '')}</div>
         <div class="headline" data-testid="alert-headline">${LOBO.escapeHTML(item.headline || '')}</div>
         ${item.sub ? `<div class="sub">${LOBO.escapeHTML(item.sub)}</div>` : ''}
-        ${item.image ? `<img class="art" src="${LOBO.escapeHTML(item.image)}" alt="">` : ''}
+        ${media}
         ${item.mega ? '<div class="particles"></div>' : ''}
       `;
       if (item.mega) {
