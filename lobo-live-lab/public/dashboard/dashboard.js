@@ -62,10 +62,11 @@
 
     // Socket for live status
     SOCK = io({ query: { room: 'dashboard' }, transports:['websocket','polling'] });
-    SOCK.on('hello', d => { CFG = d.config; renderAll(); renderStatus(d.status); renderCountersMini(d.counters); });
+    SOCK.on('hello', d => { CFG = d.config; renderAll(); renderStatus(d.status); renderCountersMini(d.counters); renderSignal(d.signal); });
     SOCK.on('config', c => { CFG = c; renderAll(); });
     SOCK.on('status', s => renderStatus(s));
     SOCK.on('counters', c => renderCountersMini(c));
+    SOCK.on('signal', s => renderSignal(s));
     SOCK.on('event', ev => prependLog(ev));
   }
 
@@ -129,6 +130,31 @@
       const b = document.createElement('div'); b.className = 'box';
       b.innerHTML = `<div class="k">${lbl}</div><div class="v" data-testid="counter-${k}">${fmt(v)}</div>`;
       el.appendChild(b);
+    }
+  }
+
+  // ---------------- Signal check ----------------
+  const SIGNAL_TYPES = [
+    ['chat', 'Chat'], ['like', 'Likes'], ['follow', 'Follows'], ['gift', 'Gifts'],
+    ['share', 'Shares'], ['subscribe', 'Subs'], ['member', 'Joins'], ['social', 'Social'], ['viewers', 'Viewer pings'],
+  ];
+  function renderSignal(sig) {
+    const grid = $('#signalGrid'); if (!grid) return;
+    const counts = (sig && sig.events) || {};
+    grid.innerHTML = '';
+    for (const [key, lbl] of SIGNAL_TYPES) {
+      const n = counts[key] || 0;
+      const chip = document.createElement('div');
+      chip.className = 'sig-chip' + (n > 0 ? ' on' : '');
+      chip.innerHTML = `<span class="n" data-testid="signal-${key}">${fmt(n)}</span><span class="t">${lbl}</span>`;
+      grid.appendChild(chip);
+    }
+    const last = $('#signalLast');
+    if (sig && sig.lastEventAt) {
+      const secs = Math.max(0, Math.round((Date.now() - sig.lastEventAt) / 1000));
+      last.textContent = `Last event: ${secs < 5 ? 'just now' : secs + 's ago'}`;
+    } else {
+      last.textContent = 'No events received from TikTok yet this session.';
     }
   }
   function fmt(n) {

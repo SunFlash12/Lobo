@@ -81,6 +81,7 @@ api.get('/status', (req, res) => res.json({
   status: tiktok.status,
   demo: demo.isRunning(),
   counters: bus.getCounters(),
+  signal: tiktok.getSignal(),
 }));
 
 api.get('/config', (req, res) => res.json({ config: db.loadConfig() }));
@@ -160,6 +161,7 @@ io.on('connection', (socket) => {
     config: db.loadConfig(),
     counters: bus.getCounters(),
     status: tiktok.status,
+    signal: tiktok.getSignal(),
   });
 });
 

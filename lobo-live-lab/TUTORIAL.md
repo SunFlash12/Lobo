@@ -435,6 +435,23 @@ it (rare) their paid plans start at a few dollars a month.
 
 ## 10. Troubleshooting
 
+### Alerts / notifications don't fire during a real live
+Open **Connection** and look at the new **Signal check** panel. It counts the
+raw events arriving from TikTok this session:
+
+- **All chips at zero while you're live** → the connection is the problem.
+  Check the status pill: it must be green and say `CONNECTED TO @ZXPSYCHOJOKERXZ1`.
+  If it's red/yellow, read its message (wrong username? not live? sign blocked?).
+- **Chips are counting but no alert appears** → the connection is fine; check
+  the Alerts tab: is that alert type toggled ON? Does it have a duration > 0?
+  Is the alerts overlay URL actually added in OBS (and the OBS browser source
+  not paused)?
+- **Likes chip counts but no like alert** → like alerts only fire at
+  milestones (default: every 100 likes). Lower "Milestone every N likes" to
+  test with a quiet room.
+- Also check the server console: it prints `[tiktok] receiving 'chat' events
+  from @...` the first time each event type arrives.
+
 ### "npm is not recognized as an internal or external command"
 - Node.js isn't installed, or your Command Prompt is stale. Close the window,
   open a new Command Prompt, and try again. If it still doesn't work, install

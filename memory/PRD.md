@@ -148,6 +148,25 @@ Root causes found and fixed (verified against the REAL live stream):
   counts, joins, viewer counts all normalized correctly; chat overlay renders.
 - ✅ Tests: 25/25 (19 legacy-shape + 6 new raw-v3-shape tests).
 
+## Iteration 6 (2026-02) — live monitoring + Signal Check panel
+User reported "notifications not working" while live. Sandbox-side verification
+(connected to the REAL stream twice): connection, chat, likes, joins, viewer
+counts all normalize correctly — pipeline is healthy after the Iteration 5 fix.
+Follow/gift/sub raw events did not occur during monitoring (0-1 viewer stream)
+but their v3 mappings are unit-tested. Most likely remaining cause is the
+user's LOCAL install running pre-Iteration-5 code / old saved username.
+Improvements shipped:
+- ✅ **Signal check panel** (Dashboard → Connection): live per-type counters of
+  raw events received from TikTok this session (chat/likes/follows/gifts/
+  shares/subs/joins/social/viewer pings) + "last event Xs ago". Chips light up
+  red as events arrive. Powered by `tiktok.js` `_countEvent()` → throttled
+  (2s) socket `signal` emit to the dashboard room; also in `/api/status` and
+  socket `hello`.
+- ✅ TUTORIAL troubleshooting section: "Alerts don't fire during a real live"
+  decision tree based on the Signal check.
+- ✅ Verified live: green LIVE pill, viewer-ping chip counting, last-event
+  timestamp updating. Lint clean, 25/25 tests pass.
+
 ## Real-live-session test
 Requires @lobothemainman to actually be broadcasting on TikTok. From the sandbox
 we can only verify the "not live" reconnect loop, which is working and now

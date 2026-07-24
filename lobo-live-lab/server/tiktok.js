@@ -23,6 +23,26 @@ class TikTokManager {
     this.reconnectAttempts = 0;
     this.reconnectTimer = null;
     this.stopped = true;
+    // Signal check: raw events received from TikTok this session (per type)
+    this.eventCounts = {};
+    this.lastEventAt = null;
+    this._signalTimer = null;
+  }
+
+  _countEvent(tag) {
+    this.eventCounts[tag] = (this.eventCounts[tag] || 0) + 1;
+    this.lastEventAt = Date.now();
+    // Throttled push so the dashboard "Signal check" stays live without spam
+    if (this._signalTimer) return;
+    this._signalTimer = setTimeout(() => {
+      this._signalTimer = null;
+      if (bus.io) bus.io.to('dashboard').emit('signal', this.getSignal());
+    }, 2000);
+    if (this._signalTimer.unref) this._signalTimer.unref();
+  }
+
+  getSignal() {
+    return { events: this.eventCounts, lastEventAt: this.lastEventAt };
   }
 
   setStatus(state, message, extra = {}) {
@@ -41,6 +61,8 @@ class TikTokManager {
     }
     this.stop(); // clear existing
     this.stopped = false;
+    this.eventCounts = {};
+    this.lastEventAt = null;
     this.username = (username || '').replace(/^@/, '').trim();
     if (!this.username) {
       this.setStatus('error', 'No TikTok username set. Enter one in the dashboard.');
@@ -71,6 +93,7 @@ class TikTokManager {
             seenTypes.add(tag);
             console.log(`[tiktok] receiving '${tag}' events from @${this.username}`);
           }
+          this._countEvent(tag);
           handleRaw(tag, data, (ev) => bus.publish(ev));
         });
       } catch (_e) { /* ignore */ }
@@ -83,9 +106,10 @@ class TikTokManager {
     wire(WebcastEvent ? WebcastEvent.MEMBER    : 'member',    'member');
     wire(WebcastEvent ? WebcastEvent.GIFT      : 'gift',      'gift');
     wire(WebcastEvent ? WebcastEvent.STREAM_END: 'streamEnd', 'streamEnd');
-    try { this.conn.on(WebcastEvent ? WebcastEvent.SUB_NOTIFY : 'subNotify', (d) => handleRaw('subscribe', d, (ev) => bus.publish(ev))); } catch (_e) { /* ignore */ }
+    try { this.conn.on(WebcastEvent ? WebcastEvent.SUB_NOTIFY : 'subNotify', (d) => { this._countEvent('subscribe'); handleRaw('subscribe', d, (ev) => bus.publish(ev)); }); } catch (_e) { /* ignore */ }
     try {
       this.conn.on(WebcastEvent ? WebcastEvent.ROOM_USER : 'roomUser', (data) => {
+        this._countEvent('viewers');
         // v3 proto renamed viewerCount -> total (string); keep legacy fallbacks
         const viewers = Number(data && (data.total != null ? data.total : (data.viewerCount != null ? data.viewerCount : data.totalUser))) || 0;
         bus.publish({

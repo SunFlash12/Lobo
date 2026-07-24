@@ -225,6 +225,17 @@ code {
 .counters-mini .k { color: var(--steel); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; }
 .counters-mini .v { font-family: 'Anton', sans-serif; font-size: 28px; margin-top: 2px; }
 
+.signal-grid { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 8px; }
+.sig-chip {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  padding: 5px 10px; background: var(--ink); border: 1px solid var(--ink-4);
+  opacity: 0.55; transition: opacity 200ms ease, border-color 200ms ease;
+}
+.sig-chip.on { opacity: 1; border-color: var(--blood); }
+.sig-chip .n { font-family: 'Anton', sans-serif; font-size: 18px; }
+.sig-chip.on .n { color: var(--blood); }
+.sig-chip .t { color: var(--steel); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+
 /* Preview iframe */
 .preview {
   width: 100%; height: 620px;
