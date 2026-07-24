@@ -63,6 +63,7 @@ const DEFAULT_CONFIG = {
     like:       { enabled: true,  sound: '', image: '', duration: 3500, volume: 0.6, template: '{username} smashed {likeCount} likes', milestoneEvery: 100 },
     share:      { enabled: true,  sound: '', image: '', duration: 4000, volume: 0.7, template: '{username} SHARED THE STREAM' },
     subscribe:  { enabled: true,  sound: '', image: '/uploads/starter-lobo-pose.png', duration: 6500, volume: 0.9, template: '{username} JOINED THE PACK' },
+    join:       { enabled: true,  sound: '', image: '', duration: 3000, volume: 0.6, template: '{username} ENTERED THE PIT', oncePerSession: true },
   },
   chat: {
     fadeAfter: 12000,
@@ -70,6 +71,7 @@ const DEFAULT_CONFIG = {
     maxLength: 180,
     profanityFilter: true,
     showAvatars: true,
+    ttsComments: false,
     roleColors: { streamer: '#C8102E', mod: '#3E5F3A', gifter: '#EDBE1A', default: '#EDEDEA' },
   },
   goal: { label: 'ROAD TO 10K', start: 0, target: 10000, current: 0 },

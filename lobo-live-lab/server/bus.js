@@ -6,7 +6,7 @@ const webhook = require('./webhook');
 const db = require('./db');
 
 const MAX_LOG = 500;
-const DEFAULT_COUNTERS = { followers: 0, sessionLikes: 0, viewers: 0, giftCoins: 0, commentCount: 0 };
+const DEFAULT_COUNTERS = { followers: 0, sessionLikes: 0, viewers: 0, peakViewers: 0, giftCoins: 0, commentCount: 0 };
 const PERSIST_KEY = 'counters';
 const PERSIST_DEBOUNCE_MS = 1000;
 
@@ -29,7 +29,13 @@ class EventBus extends EventEmitter {
     if (ev.type === 'like')      this.counters.sessionLikes += (ev.value.likeCount || 1);
     if (ev.type === 'comment')   this.counters.commentCount += 1;
     if (ev.type === 'gift')      this.counters.giftCoins += (ev.value.coins || 0);
-    if (ev.type === 'viewers')   this.counters.viewers = ev.value.viewerCount || 0;
+    if (ev.type === 'viewers') {
+      this.counters.viewers = ev.value.viewerCount || 0;
+      if (this.counters.viewers > (this.counters.peakViewers || 0)) {
+        this.counters.peakViewers = this.counters.viewers;
+        this._schedulePersist(); // peaks are worth keeping across restarts
+      }
+    }
 
     // Push to rolling log
     this.log.push(ev);

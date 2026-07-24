@@ -167,6 +167,24 @@ Improvements shipped:
 - ✅ Verified live: green LIVE pill, viewer-ping chip counting, last-event
   timestamp updating. Lint clean, 25/25 tests pass.
 
+## Iteration 7 (2026-02) — monitoring-driven improvements (live session)
+Monitored the real stream (wide-net DECODED_DATA capture). Data story: joins
+are the dominant event; viewers hover 0-2; streamer's hands are on the game.
+Shipped three targeted improvements:
+- ✅ **Viewer join welcome alerts**: new 6th alert type ("Viewer joins") with
+  subtle smaller styling (`.alert.subtle`), template `{username} ENTERED THE
+  PIT`, kicker "IN THE PIT", enabled by default, greets each viewer only once
+  per overlay session (`oncePerSession`, toggleable in dashboard).
+- ✅ **Peak viewers**: `counters.peakViewers` in bus.js (persisted on new peak,
+  cleared by reset), shown as "Peak" box in dashboard mini counters.
+- ✅ **Chat TTS**: `chat.ttsComments` config + dashboard toggle — chat overlay
+  speaks "username. message" via speechSynthesis so the streamer hears chat
+  while gaming.
+- ✅ TUTORIAL updated (six alert types, join alert notes, TTS notes).
+- ✅ Verified: demo join fired → subtle "NO MERCY ENTERED THE PIT" alert
+  rendered; dashboard shows join card + once toggle + TTS toggle + Peak box;
+  still connected LIVE to the real room. Lint clean, 25/25 tests.
+
 ## Real-live-session test
 Requires @lobothemainman to actually be broadcasting on TikTok. From the sandbox
 we can only verify the "not live" reconnect loop, which is working and now

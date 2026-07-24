@@ -97,6 +97,15 @@
         </div>`;
       feed.appendChild(row);
 
+      // Read chat aloud (for a streamer whose hands are on the game)
+      if (chatCfg.ttsComments && text && 'speechSynthesis' in window) {
+        try {
+          const u = new SpeechSynthesisUtterance(`${uname}. ${text.slice(0, 150)}`);
+          u.rate = 1.1; u.volume = 0.9;
+          window.speechSynthesis.speak(u);
+        } catch (_e) {}
+      }
+
       // Cap number of messages shown
       const max = chatCfg.maxMessages || 40;
       while (feed.children.length > max) feed.firstElementChild.remove();

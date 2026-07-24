@@ -220,7 +220,7 @@ code {
 }
 .status-line { font-family: 'Anton', sans-serif; font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; }
 .status-sub  { color: var(--steel); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; margin-top: 4px; }
-.counters-mini { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+.counters-mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)); gap: 8px; margin-top: 14px; }
 .counters-mini .box { padding: 10px 12px; background: var(--ink); border: 1px solid var(--ink-4); }
 .counters-mini .k { color: var(--steel); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; }
 .counters-mini .v { font-family: 'Anton', sans-serif; font-size: 28px; margin-top: 2px; }

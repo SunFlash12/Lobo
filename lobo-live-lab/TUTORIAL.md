@@ -237,7 +237,7 @@ For each file:
 
 This is the fun part. Click the **Alerts** tab.
 
-There are five alert types, each in its own card. For each one:
+There are six alert types, each in its own card. For each one:
 
 1. **Toggle switch** (top-right of the card) — turn it on/off.
 2. **Text template** — the sentence shown in the alert. Use these variables in
@@ -264,6 +264,10 @@ There are five alert types, each in its own card. For each one:
   particles + CRT flicker). Default: 500 coins.
 - **Like alerts** have a **milestone every N likes** field. Alerts only fire on
   round milestones (e.g. every 100 likes), not every single tap. Default: 100.
+- **Viewer join alerts** greet people as they enter the room (subtle, smaller
+  style so they don't compete with follow/gift alerts). By default each viewer
+  is welcomed only **once per stream** — turn the toggle off to greet every
+  re-entry. Great for small rooms: everyone gets seen.
 - **New follower alerts** have a **TTS toggle** — when on, your browser reads
   the follower's name out loud through your speakers. (Uses your OS's built-in
   voice.)
@@ -283,6 +287,10 @@ These are simpler. Each has its own tab.
 - **Streamer colour** — colour of your own username in chat.
 - **Profanity filter** — replaces common swear words with `****`.
 - **Show avatars** — turn off for a minimal, text-only look.
+- **Read chat aloud (TTS)** — the chat overlay speaks each comment
+  ("username. message") through your speakers/OBS audio. Perfect when your
+  hands are on the game and you can't glance at chat. Uses your OS's built-in
+  voice; no account or API needed.
 
 **Goal bar:**
 - **Label** — e.g. "ROAD TO 25K" or "1000 FOLLOWERS TO GO".

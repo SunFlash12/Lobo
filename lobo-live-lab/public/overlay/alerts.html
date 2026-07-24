@@ -64,6 +64,15 @@
   .alert.enter { animation: clawIn 320ms cubic-bezier(.2,.85,.25,1) both; }
   .alert.exit  { animation: clawOut 280ms cubic-bezier(.6,.05,.7,.1) both; }
 
+  /* Subtle variant for viewer-join welcomes: smaller, less shouty */
+  .alert.subtle {
+    min-width: 420px;
+    padding: 22px 34px;
+    border-left-width: 4px;
+  }
+  .alert.subtle .headline { font-size: 48px; }
+  .alert.subtle .kicker   { font-size: 15px; }
+
   /* Glitch variant for shares */
   .alert.glitch .headline {
     text-shadow: 3px 0 var(--blood), -3px 0 var(--swamp);
@@ -186,6 +195,8 @@
 
     // Like milestone counter
     let likeAccum = 0;
+    // Welcome each viewer at most once per overlay session
+    const seenJoins = new Set();
 
     LOBO.on('event', (ev) => {
       const cfg = (LOBO.config && LOBO.config.alerts) || {};
@@ -253,6 +264,21 @@
           sound: cfg.subscribe.sound || '',
           image: cfg.subscribe.image || '',
           volume: cfg.subscribe.volume,
+        });
+      } else if (ev.type === 'join' && cfg.join && cfg.join.enabled) {
+        const key = (ev.user && (ev.user.username || ev.user.id)) || '';
+        if (cfg.join.oncePerSession !== false && key) {
+          if (seenJoins.has(key)) return;
+          seenJoins.add(key);
+        }
+        push({
+          kicker: 'IN THE PIT',
+          headline: LOBO.template(cfg.join.template || '{username} ENTERED THE PIT', { username: uname }),
+          duration: cfg.join.duration || 3000,
+          sound: cfg.join.sound || '',
+          image: cfg.join.image || '',
+          volume: cfg.join.volume,
+          variant: 'subtle',
         });
       }
     });

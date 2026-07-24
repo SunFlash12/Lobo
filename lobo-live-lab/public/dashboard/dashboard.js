@@ -123,6 +123,7 @@
     el.innerHTML = '';
     for (const [k, v, lbl] of [
       ['viewers', c.viewers, 'Viewers'],
+      ['peakViewers', c.peakViewers, 'Peak'],
       ['sessionLikes', c.sessionLikes, 'Likes'],
       ['followers', c.followers, 'Follows'],
       ['giftCoins', c.giftCoins, 'Coins'],
@@ -180,6 +181,7 @@
     { key: 'like',      label: 'Like milestone', vars:['username','likeCount'], hasMilestone:true },
     { key: 'share',     label: 'Share',          vars:['username'] },
     { key: 'subscribe', label: 'Subscriber',     vars:['username'] },
+    { key: 'join',      label: 'Viewer joins (welcome)', vars:['username'], hasOnce:true },
   ];
   function renderAlerts() {
     const wrap = $('#alertsForms'); wrap.innerHTML = '';
@@ -223,6 +225,14 @@
           ${at.hasMilestone ? `
           <label class="fld"><span>Milestone every N likes</span>
             <input type="number" min="1" step="1" data-alert="like" data-field="milestoneEvery" value="${cfg.milestoneEvery||100}" data-testid="alert-like-every"/>
+          </label>` : ''}
+          ${at.hasOnce ? `
+          <label class="fld" style="grid-column: 1/-1;">
+            <label class="switch">
+              <input type="checkbox" ${cfg.oncePerSession!==false?'checked':''} data-alert="join" data-field="oncePerSession" data-testid="alert-join-once"/>
+              <span class="track"></span>
+              <span class="lbl">Welcome each viewer only once per stream</span>
+            </label>
           </label>` : ''}
           ${at.key==='follow' ? `
           <label class="fld" style="grid-column: 1/-1;">
@@ -294,6 +304,11 @@
           <span class="track"></span>
           <span class="lbl">Show avatars</span>
         </label>
+        <label class="switch">
+          <input type="checkbox" id="chat-tts" ${c.ttsComments?'checked':''} data-testid="chat-tts"/>
+          <span class="track"></span>
+          <span class="lbl">Read chat aloud (TTS)</span>
+        </label>
       </div>
     `;
     $('#chatForm').addEventListener('input', (e) => {
@@ -303,6 +318,7 @@
       c.maxLength = Number($('#chat-len').value);
       c.profanityFilter = $('#chat-profanity').checked;
       c.showAvatars = $('#chat-avatars').checked;
+      c.ttsComments = $('#chat-tts').checked;
       c.roleColors = c.roleColors || {};
       c.roleColors.streamer = $('#chat-color-streamer').value;
       debouncedSave();
